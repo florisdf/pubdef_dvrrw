@@ -19,6 +19,10 @@ title: Diep Visuele Herkenning voor de Echte Wereld
 
 ---
 
+<Sandbox />
+
+---
+
 # Wie is dit?
 
 - Voor een computer is een afbeelding een grote tabel met getallen
