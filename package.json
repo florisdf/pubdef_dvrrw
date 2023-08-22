@@ -10,10 +10,12 @@
     "@slidev/cli": "0.42.7",
     "@slidev/theme-default": "latest",
     "@slidev/theme-seriph": "latest",
-    "three": "^0.134.0",
-    "troisjs": "^0.3.4"
+    "@tweakpane/plugin-essentials": "^0.2.0",
+    "three": "^0.155.0"
   },
   "devDependencies": {
-    "@iconify-json/la": "^1.1.5"
-  }
+    "@iconify-json/la": "^1.1.5",
+    "@types/three": "^0.155.0"
+  },
+  "type": "module"
 }
