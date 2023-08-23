@@ -11,6 +11,8 @@
     "@slidev/theme-default": "latest",
     "@slidev/theme-seriph": "latest",
     "@tweakpane/plugin-essentials": "^0.2.0",
+    "gsap": "npm:@gsap/shockingly@^3.12.2",
+    "lodash": "^4.17.21",
     "three": "^0.155.0"
   },
   "devDependencies": {

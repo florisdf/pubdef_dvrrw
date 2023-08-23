@@ -6,28 +6,33 @@ import TWEEN from 'three/addons/libs/tween.module.js';
 import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
 import { CSS3DRenderer, CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import _ from 'lodash';
+import { gsap } from "gsap";
 
 const containerRef = shallowRef();
 
 
-function getSquareTextMesh(text, size, fontSize='20pt', borderWidth=3, fontFamily='Quicksand') {
+function getSquareTextMesh(
+  text, size, fontSize='20pt', strokeWidth=3, strokeColor='black',
+  fontFamily='Quicksand'
+) {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
 
-  // Set actual size in memory (scaled to account for extra pixel density).
-  const scale = window.devicePixelRatio; // Change to 1 on retina screens to see blurry canvas.
+  const scale = window.devicePixelRatio;
   canvas.width = Math.floor(size * scale);
   canvas.height = Math.floor(size * scale);
-
-  // Normalize coordinate system to use CSS pixels.
   ctx.scale(scale, scale);
 
   ctx.font = `${fontSize} ${fontFamily}`;
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillText(text, size / 2, size / 2)
-  ctx.lineWidth = borderWidth;
-  ctx.strokeRect(0, 0, size, size)
+  if (strokeWidth > 0) {
+    ctx.lineWidth = strokeWidth;
+    ctx.strokeStyle = strokeColor;
+    ctx.strokeRect(0, 0, size, size)
+  }
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.needsUpdate = true
@@ -43,63 +48,98 @@ function getSquareTextMesh(text, size, fontSize='20pt', borderWidth=3, fontFamil
 
 
 function getTable(
-  cells, cellToMesh, cellSize
+  cells, cellToMesh, cellSize, cellMargin=0
 ) {
   const numRows = cells.length;
-  const numCols = Math.min(...cells.map(row => row.length));
+  const numCols = Math.max(...cells.map(row => row.length));
 
   const group = new THREE.Group();
+  const cellMeshes = [];
 
   let i, j;
   for (i = 0; i < numRows; i++) {
+    const row = cells[i];
+    cellMeshes.push([])
     for (j = 0; j < numCols; j++) {
+      if (row.length <= j) {
+	continue;
+      }
       const cell = cells[i][j];
-      const mesh = cellToMesh(cell, cellSize);
-      mesh.position.x = i*cellSize + cellSize/2;
-      mesh.position.y = - j*cellSize - cellSize/2;
+      const mesh = cellToMesh(cell);
+      mesh.position.x = j*(cellSize + cellMargin) + cellSize/2;
+      mesh.position.y = - i*(cellSize + cellMargin) - cellSize/2;
       mesh.position.z = 0;
       group.add(mesh);
+      cellMeshes[i].push(mesh);
     }
   }
-  return group;
+  return {
+    group: group,
+    meshes: cellMeshes
+  };
 }
 
-
 function getNumberTable(
-  numbers, cellSize, lineWidth,
+  numbers, cellSize, strokeWidth,
+  cellMargin=0,
+  strokeColor='black',
   fontSize=`${cellSize*.4}px`,
   precision=2
 ) {
   return getTable(
     numbers,
-    (cell, cellSize) => {
+    cell => {
       const x = cell.toFixed(precision)
-      return getSquareTextMesh(`${x}`, cellSize, fontSize, lineWidth);
+      return getSquareTextMesh(
+	`${x}`, cellSize, fontSize,
+	strokeWidth, strokeColor
+      );
     },
-    cellSize
+    cellSize, cellMargin
   );
 }
 
 
 function getColorSquare(
-  color, size
+  fillColor, size, strokeWidth=0, strokeColor='black',
 ) {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  const scale = window.devicePixelRatio;
+  canvas.width = Math.floor(size * scale);
+  canvas.height = Math.floor(size * scale);
+  ctx.scale(scale, scale);
+  ctx.fillStyle = fillColor;
+  ctx.fillRect(0, 0, size, size)
+  if (strokeWidth > 0) {
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = strokeWidth;
+    ctx.strokeRect(0, 0, size, size)
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.needsUpdate = true
+
   var material = new THREE.MeshBasicMaterial({
-    color: color,
+    map: texture,
     side: THREE.DoubleSide,
   })
   var mesh = new THREE.Mesh(new THREE.PlaneGeometry(size, size), material)
-  return mesh
+
+  return mesh;
 }
 
 
 function getColorTable(
-  colors, cellSize,
+  colors, cellSize, strokeWidth=0, cellMargin=0,
+  strokeColor='black'
 ) {
   return getTable(
     colors,
-    getColorSquare,
-    cellSize
+    cell => getColorSquare(cell, cellSize, strokeWidth, strokeColor),
+    cellSize,
+    cellMargin
   );
 }
 
@@ -107,11 +147,11 @@ function getColorTable(
 onMounted(() => {
   const container = containerRef.value;
 
-  const canvasWidth = 300;
-  const canvasHeight = 300;
+  const slideContent = document.getElementById('slide-content')
+  const canvasWidth = parseInt(slideContent.style.width);
+  const canvasHeight = parseInt(slideContent.style.height);
 
   const cellSize = 100;
-  const lineWidth = 3;
   const numbers = [
     [0.1, 0.9, 0.4],
     [1.0, 0.8, 0.2],
@@ -124,33 +164,90 @@ onMounted(() => {
   let camera = new THREE.PerspectiveCamera(fov, canvasWidth/canvasHeight, 1, 10000);
   const tableWidth = numCols * cellSize;
   const tableHeight = numRows * cellSize;
-  camera.position.z = 2000;
-  camera.position.x = tableWidth / 2;
-  camera.position.y = - tableHeight / 2;
 
   let scene = new THREE.Scene();
 
-  const numberTable = getNumberTable(
-    numbers, cellSize, lineWidth,
+  const {group: numberTable, meshes: numberMeshes} = getNumberTable(
+    numbers, cellSize, 3,
   )
   scene.add(numberTable);
 
-  const colors = numbers.map(row => row.map(x => {
-    return new THREE.Color(x, x, x);
-  }));
-  const colorTable = getColorTable(
-    colors, cellSize,
-  )
-  colorTable.position.x += tableWidth;
-  scene.add(colorTable);
+  const tableBox = new THREE.Box3();
+  tableBox.setFromObject(numberTable);
+  let tableCenter = new THREE.Vector3();
+  tableBox.getCenter(tableCenter);
+  let tableSize = new THREE.Vector3();
+  tableBox.getSize(tableSize);
+
+  const toGray = (arr) => arr.map(row => row.map(x => `rgb(${x*255},${x*255},${x*255})`))
+
+  // const colors = toGray(numbers);
+  // const {group: colorTable, meshes: colorMeshes} = getColorTable(colors, cellSize)
+  // colorTable.position.x = numberTable.position.x;
+  // colorTable.position.y = numberTable.position.y + tableSize.y + 10;
+  // scene.add(colorTable);
+
+  const paletteValues = [_.range(0.0, 1.1, 0.1)];
+
+  const margin = 20;
+  const {group: paletteColorTable, meshes: paletteColorMeshes} = getColorTable(toGray(paletteValues), cellSize, 0, margin, 'black')
+
+  const paletteBox = new THREE.Box3();
+  paletteBox.setFromObject(paletteColorTable);
+  let paletteSize = new THREE.Vector3();
+  paletteBox.getSize(paletteSize);
+
+  paletteColorTable.position.x = numberTable.position.x - paletteSize.x / 2 + tableSize.x / 2;
+  paletteColorTable.position.y = numberTable.position.y - tableSize.y - 150;
+  paletteColorTable.position.z = 200;
+  scene.add(paletteColorTable);
+
+  const {group: paletteNumberTable, meshes: paletteNumberMeshes} = getNumberTable(paletteValues, cellSize, 0, margin)
+  paletteNumberTable.position.x = paletteColorTable.position.x;
+  paletteNumberTable.position.y = paletteColorTable.position.y - cellSize * 0.9;
+  paletteNumberTable.position.z = paletteColorTable.position.z;
+  scene.add(paletteNumberTable);
+
+  camera.position.z = 1500;
+  camera.position.x = tableCenter.x;
+  camera.position.y = tableCenter.y;
 
   let renderer = new THREE.WebGLRenderer({alpha: true, antialias: true});
   renderer.setPixelRatio(window.devicePixelRatio * 3)
-  container.appendChild(renderer.domElement);
+  const renderEl = renderer.domElement;
+  renderEl.style.position = 'absolute';
+  renderEl.style.top = 0;
+  renderEl.style.left = 0;
+  container.appendChild(renderEl);
   renderer.domElement.style.margin = "auto"
   renderer.setSize(canvasWidth, canvasHeight);
 
-  renderer.render(scene, camera);
+  function render() {
+    renderer.render(scene, camera);
+  }
+  render()
+
+  const paletteDests = paletteValues[0].map(() => []);
+  numbers.forEach((row, i) => {
+    row.forEach((x, j) => {
+      const paletteIdx = paletteValues[0].reduce((acc, currVal, currIdx, arr) => {
+	return Math.abs(currVal - x) < Math.abs(arr[acc] - x) ? currIdx : acc;
+      }, 0);
+      paletteDests[paletteIdx].push([i, j]);
+    });
+  });
+  paletteDests.forEach((dests, paletteIdx) => {
+    dests.forEach(([i, j]) => {
+      const srcMesh = paletteColorMeshes[0][paletteIdx].clone();
+      const dstMesh = numberMeshes[i][j];
+      scene.add(srcMesh);
+      gsap.to(srcMesh.position, {
+	x: dstMesh.position.x,
+	y: dstMesh.position.y,
+	onUpdate: render,
+      })
+    });
+  });
 })
 </script>
 
