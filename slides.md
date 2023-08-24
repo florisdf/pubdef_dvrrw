@@ -12,11 +12,14 @@ drawings:
   persist: false
 transition: slide-left
 title: Diep Visuele Herkenning voor de Echte Wereld
+colorSchema: 'auto'
 ---
 
 # Diep Visuele Herkenning
 ## voor de Echte Wereld
 
+---
+preload: false
 ---
 
 <Sandbox />

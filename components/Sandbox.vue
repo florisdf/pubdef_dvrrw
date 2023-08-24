@@ -236,18 +236,50 @@ onMounted(() => {
       paletteDests[paletteIdx].push([i, j]);
     });
   });
+  const tl = gsap.timeline({
+    delay: 2,
+    paused: true,
+    onUpdate: render,
+    defaults: {
+      ease: "power2.inOut" 
+    },
+  });
   paletteDests.forEach((dests, paletteIdx) => {
+    const srcMesh = paletteColorMeshes[0][paletteIdx];
+    let srcCenter = new THREE.Vector3();
+    srcMesh.getWorldPosition(srcCenter);
+
     dests.forEach(([i, j]) => {
-      const srcMesh = paletteColorMeshes[0][paletteIdx].clone();
+      const srcClone = srcMesh.clone();
+
       const dstMesh = numberMeshes[i][j];
-      scene.add(srcMesh);
-      gsap.to(srcMesh.position, {
-	x: dstMesh.position.x,
-	y: dstMesh.position.y,
-	onUpdate: render,
-      })
+      let dstCenter = new THREE.Vector3();
+      dstMesh.getWorldPosition(dstCenter);
+
+      scene.add(srcClone);
+      gsap.set(srcClone.position, {
+	x: srcCenter.x,
+	y: srcCenter.y,
+	z: srcCenter.z,
+      });
+      tl.to(dstMesh.scale, {
+	x: 1.5,
+	y: 1.5,
+	repeat: 1,
+	yoyo: true,
+	duration: 0.2,
+      },
+	`palette${paletteIdx}Scale`
+      ).to(srcClone.position, {
+	x: dstCenter.x,
+	y: dstCenter.y,
+	z: dstCenter.z + 1,
+	duration: 1,
+      },
+	`palette${paletteIdx}Move`)
     });
   });
+  tl.play();
 })
 </script>
 
