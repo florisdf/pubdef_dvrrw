@@ -13,7 +13,8 @@ const containerRef = shallowRef();
 
 
 function getSquareTextMesh(
-  text, size, fontSize='20pt', strokeWidth=3, strokeColor='black',
+  text, size, fontSize='20pt', strokeWidth=3,
+  strokeColor='black', fillColor='white',
   fontFamily='Quicksand'
 ) {
   const canvas = document.createElement("canvas");
@@ -27,6 +28,9 @@ function getSquareTextMesh(
   ctx.font = `${fontSize} ${fontFamily}`;
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
+  ctx.fillStyle = fillColor;
+  ctx.fillRect(0, 0, size, size);
+  ctx.fillStyle = strokeColor;
   ctx.fillText(text, size / 2, size / 2)
   if (strokeWidth > 0) {
     ctx.lineWidth = strokeWidth;
@@ -262,9 +266,8 @@ onMounted(() => {
 	y: srcCenter.y,
 	z: srcCenter.z,
       });
-      tl.to(dstMesh.scale, {
-	x: 1.5,
-	y: 1.5,
+      tl.to(dstMesh.position, {
+	z: srcCenter.z * 1.2,
 	repeat: 1,
 	yoyo: true,
 	duration: 0.2,
