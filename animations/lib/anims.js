@@ -2,7 +2,7 @@ import * as THREE from './three.module.js';
 
 
 export function getSquareTextMesh(
-  text, size, fontSize='20pt', strokeWidth=3,
+  text, size, fontSize='20pt', strokeWidth,
   strokeColor='black', fillColor='white',
   fontFamily='Quicksand'
 ) {
