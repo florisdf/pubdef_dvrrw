@@ -1,8 +1,6 @@
 import {
     getObjectCenter, getObjectSize,
     floatToRed, floatToGreen, floatToBlue,
-} from '../lib/anims.js';
-import {
     getNumberTableWithPalette, animatePaletteToTable
 } from '../image_palette/image_palette.js';
 import * as THREE from '../lib/three.module.js';
@@ -20,7 +18,7 @@ function getAnimationTimeline(sceneCompsRed, sceneCompsGreen, sceneCompsBlue) {
 
     const sceneRedSize = getObjectSize(sceneGroupRed);
 
-    const sceneMargin = sceneRedSize.y / 2;
+    const sceneMargin = sceneRedSize.y / 4;
     const sceneShiftY = sceneRedSize.y + sceneMargin;
     sceneGroupGreen.position.y -= sceneShiftY;
     sceneGroupBlue.position.y -= 2*sceneShiftY
@@ -83,7 +81,7 @@ function getAnimationTimeline(sceneCompsRed, sceneCompsGreen, sceneCompsBlue) {
     tl.to(camera.position, {
         x: sceneCenterGreen.x,
         y: sceneCenterGreen.y,
-        z: "+=20000",
+        z: "+=13000",
         onStart: () => {
             allSceneComps.forEach(({numberTableGroup, paletteColorMeshes}, i) =>  {
                 numberTableGroup.removeFromParent();

@@ -1,9 +1,6 @@
 import {
     getObjectCenter, getObjectSize,
-    floatToGray,
-} from '../lib/anims.js';
-import {
-    getNumberTableWithPalette, animatePaletteToTable
+    floatToGray, getNumberTableWithPalette, animatePaletteToTable
 } from './image_palette.js';
 import * as THREE from '../lib/three.module.js';
 import waldek from './waldek_the_gray.js';
