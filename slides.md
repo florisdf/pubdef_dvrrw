@@ -19,12 +19,6 @@ colorSchema: 'auto'
 ## voor de Echte Wereld
 
 ---
-preload: false
----
-
-<Sandbox />
-
----
 
 # Wie is dit?
 
@@ -33,15 +27,6 @@ preload: false
 <!--
 Tabel Waldek
 -->
-
----
-
-# Eigenschappen uit een afbeelding halen met een **neuron**
-
-- Een (artificieel) **neuron** kan vertellen of een bepaald patroon in een afbeelding voorkomt of niet
-- Bijvoorbeeld: een neuron dat herkent of een afbeelding een blauw PacMan-spookje bevat
-- Hoe doet zo'n neuron dat?
-    - Voordat we onder de motorkap van zo'n neuron gaan kijken, keren we even terug naar hoe een foto eruit ziet voor een computer
 
 ---
 
@@ -58,13 +43,18 @@ Tabel Waldek
 
 ---
 
-# Hoe een neuron een patroon herkent
+# De getallen van twee afbeeldingen vermenigvuldigen en optellen
 
-- Recap: Een neuron is gevoelig voor één bepaald patroon, bv. het patroon van een klein PacMan-spookje. We geven een afbeelding aan het neuron en het neuron zal *activeren* als die afbeelding dat patroon bevat.
-- Zoals we weten, ziet een computer een afbeelding als een tabel met getallen.
-    - Animatie waarbij input en neuronpatroon in drie kanalen worden gesplitst en vervolgens alle pixels terug naar hun palet vliegen om te tonen welke getallen eronder zitten.
+- We vermenigvuldigen de getallen van twee eenvoudige afbeeldingen met elkaar en tellen de resultaten op.
+- Als we dit voor twee *dezelfde* afbeeldingen doen, krijgen we een *groot* getal.
+- Als we dit voor twee *verschillende* afbeeldingen doen, krijgen we een *klein* getal.
+- We kunnen deze methode van vermenigvuldigen en optellen gebruiken om te weten of er een blauw PacMan spookje op een afbeelding staat. Als het vermenigvuldigen en optellen resulteert in een getal groter dan 50, zeggen we dat de afbeelding een PacMan spookje bevat.
+
+---
+
+# Het artificieel neuron
+
 - Een neuron vermenigvuldigt de getallen van zijn patroon met de getallen van de gegeven afbeelding. Die uitkomsten telt hij op. Als het resultaat van die optelling groter is dan een ingestelde drempelwaarde, activeert het neuron. Anders niet. Als het neuron activeert, is zijn uitgang het getal 1. Als het neuron niet activeert, is zijn uitgang het getal 0.
-    - Voorbeeld met PacMan-spook uitwerken. Als de ingang PacMan is of een rood spook, activeert het neuron niet.
 
 ---
 
