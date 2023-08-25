@@ -6,3 +6,4 @@ dist
 components.d.ts
 *.swp
 .venv
+.ipynb_checkpoints

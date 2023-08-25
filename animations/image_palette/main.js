@@ -1,6 +1,6 @@
 import { idxToNumber, getNumberTable, getColorTable, floatToGray } from '../lib/anims.js';
 import * as THREE from '../lib/three.module.js';
-import waldek from './waldek.js';
+import waldek from './waldek_the_gray.js';
 
 function runAnimation() {
     const container = document.getElementById('container');
