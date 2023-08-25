@@ -124,7 +124,6 @@ export function getColorSquare(
     } else {
         material = new THREE.MeshBasicMaterial({
             color: fillColor,
-            blending: THREE.AdditiveBlending,
         })
     }
     var mesh = new THREE.Mesh(new THREE.PlaneGeometry(size, size), material)
