@@ -1,0 +1,4 @@
+jupyter
+tqdm
+torch
+torchvision
