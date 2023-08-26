@@ -107,31 +107,31 @@ function getAnimationTimeline({
         }
     );
 
-    const pixelMeshes = redNumberMeshes;
-    const weightMeshes = redWeightMeshes;
-    const pixelNumbers = redNumbers;
-    const weightNumbers = redNumbers;
-    animateTablesToMAC({
-        pixelMeshes: redNumberMeshes,
-        weightMeshes: redWeightMeshes,
-        pixelNumbers: redNumbers,
-        weightNumbers: redNumbers,
-        shiftX: -shiftX, shiftY, tl, scene
-    })
-    animateTablesToMAC({
-        pixelMeshes: greenNumberMeshes,
-        weightMeshes: greenWeightMeshes,
-        pixelNumbers: greenNumbers,
-        weightNumbers: greenNumbers,
-        shiftX: 0, shiftY, tl, scene
-    })
-    animateTablesToMAC({
-        pixelMeshes: blueNumberMeshes,
-        weightMeshes: blueWeightMeshes,
-        pixelNumbers: blueNumbers,
-        weightNumbers: blueNumbers,
-        shiftX, shiftY, tl, scene
-    })
+    tl.add(
+        animateTablesToMAC({
+            pixelMeshes: redNumberMeshes,
+            weightMeshes: redWeightMeshes,
+            pixelNumbers: redNumbers,
+            weightNumbers: redNumbers,
+            shiftX: -shiftX, shiftY, scene
+        })
+    ).add(
+        animateTablesToMAC({
+            pixelMeshes: greenNumberMeshes,
+            weightMeshes: greenWeightMeshes,
+            pixelNumbers: greenNumbers,
+            weightNumbers: greenNumbers,
+            shiftX: 0, shiftY, scene
+        })
+    ).add(
+        animateTablesToMAC({
+            pixelMeshes: blueNumberMeshes,
+            weightMeshes: blueWeightMeshes,
+            pixelNumbers: blueNumbers,
+            weightNumbers: blueNumbers,
+            shiftX, shiftY, scene
+        })
+    );
 
     return tl;
 }
@@ -140,7 +140,7 @@ function getAnimationTimeline({
 function animateTablesToMAC({
     pixelMeshes, weightMeshes, 
     pixelNumbers, weightNumbers,
-    shiftX, shiftY, tl, scene
+    shiftX, shiftY, scene
 }) {
     const firstMesh = pixelMeshes[0][0];
     const cellSize = getObjectSize(firstMesh).x;
@@ -149,6 +149,12 @@ function animateTablesToMAC({
     const eqnShiftY = cellSize + 10;
     const firstMeshLocal = firstMesh.position;
     const firstMeshGlobal = firstMesh.getWorldPosition(new THREE.Vector3());
+
+    const tl = gsap.timeline({
+        defaults: {
+            ease: "power2.inOut",
+        },
+    });
 
     pixelMeshes.forEach((row, i) => {
         row.forEach((pixelMesh, j) => {
@@ -182,25 +188,28 @@ function animateTablesToMAC({
 
             tl.to(pixelMesh.position, {
                 x: pixelMeshDstPos.x,
-                y: pixelMeshDstPos.y
+                y: pixelMeshDstPos.y,
+                duration: 3,
             }, 'mac').to(weightMesh.position, {
                 x: weightMeshDstPos.x,
-                y: weightMeshDstPos.y
+                y: weightMeshDstPos.y,
+                duration: 3,
             }, 'mac').from(timesMesh.position, {
                 y: "-=10"
-            }, 'mac').from(timesMesh.material, {
+            }, '>').from(timesMesh.material, {
                 opacity: 0
-            }, 'mac').from(equalMesh.position, {
+            }, '<').from(equalMesh.position, {
                 y: "-=10"
-            }, 'mac').from(equalMesh.material, {
+            }, '>').from(equalMesh.material, {
                 opacity: 0
-            }, 'mac').from(resultMesh.position, {
+            }, '<').from(resultMesh.position, {
                 y: "-=10"
-            }, 'mac').from(resultMesh.material, {
+            }, '>').from(resultMesh.material, {
                 opacity: 0
-            }, 'mac')
+            }, '<')
         })
     })
+    return tl;
 }
 
 
