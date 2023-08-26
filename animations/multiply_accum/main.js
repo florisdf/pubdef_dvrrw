@@ -28,10 +28,6 @@ function getAnimationTimeline({
     redWeightGroup.position.x -= shiftX;
     blueWeightGroup.position.x += shiftX;
 
-    redWeightGroup.position.y -= shiftY;
-    greenWeightGroup.position.y -= shiftY;
-    blueWeightGroup.position.y -= shiftY;
-
     // Create scene
     const sceneGroup = new THREE.Group();
     sceneGroup.add(redNumberGroup);
@@ -58,7 +54,7 @@ function getAnimationTimeline({
 
     const sceneCenter = getObjectCenter(sceneGroup);
     camera.position.x = sceneCenter.x;
-    camera.position.y = sceneCenter.y;
+    camera.position.y = sceneCenter.y - shiftY/2;
     camera.position.z += 3500;
 
     // Render
@@ -82,8 +78,14 @@ function getAnimationTimeline({
         },
     });
 
-    const allMeshes = [redColorMeshes, greenColorMeshes, blueColorMeshes].flat().flat();
-    const materials = allMeshes.map(mesh => mesh.material);
+    const colorMeshes = [redColorMeshes, greenColorMeshes, blueColorMeshes].flat().flat();
+    const colorMaterials = colorMeshes.map(mesh => mesh.material);
+
+    const weightMeshes = [redWeightMeshes, greenWeightMeshes, blueWeightMeshes].flat().flat();
+    const weightMaterials = weightMeshes.map(mesh => mesh.material);
+    weightMaterials.forEach(m => {
+        m.transparent = true
+    });
 
     tl.to(
         [redColorGroup.position, redNumberGroup.position], {
@@ -95,11 +97,13 @@ function getAnimationTimeline({
             x: `+=${shiftX}`
         },
         'chShift'
-    ).to(materials, {
+    ).to(colorMaterials, {
         opacity: 0
-    }).from(
+    }).from(weightMaterials, {
+        opacity: 0
+    }).to(
         [redWeightGroup.position, greenWeightGroup.position, blueWeightGroup.position], {
-            y: `-=${5*shiftY}`,
+            y: `-=${shiftY}`,
         }
     );
 
