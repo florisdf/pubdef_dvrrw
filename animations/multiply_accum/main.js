@@ -1,7 +1,8 @@
 import {
     getObjectCenter, getObjectSize,
     floatToRed, floatToGreen, floatToBlue,
-    getNumberTable, getColorTable, idxToNumber
+    getNumberTable, getColorTable, idxToNumber,
+    getSquareTextMesh
 } from '../image_palette/image_palette.js';
 import * as THREE from '../lib/three.module.js';
 import cyanGhostRed from './cyan_ghost_red.js';
@@ -19,6 +20,7 @@ function getAnimationTimeline({
     redWeightGroup, redWeightMeshes,
     greenWeightGroup, greenWeightMeshes,
     blueWeightGroup, blueWeightMeshes,
+    redNumbers, greenNumbers, blueNumbers,
 }) {
     // Put in initial positions
     const tableSize = getObjectSize(redColorGroup);
@@ -81,12 +83,10 @@ function getAnimationTimeline({
     const colorMeshes = [redColorMeshes, greenColorMeshes, blueColorMeshes].flat().flat();
     const colorMaterials = colorMeshes.map(mesh => mesh.material);
 
-    const weightMeshes = [redWeightMeshes, greenWeightMeshes, blueWeightMeshes].flat().flat();
-    const weightMaterials = weightMeshes.map(mesh => mesh.material);
-    weightMaterials.forEach(m => {
-        m.transparent = true
-    });
+    const allWeightMeshes = [redWeightMeshes, greenWeightMeshes, blueWeightMeshes].flat().flat();
+    const weightMaterials = allWeightMeshes.map(mesh => mesh.material);
 
+    // Split image channels, convert to numbers and duplicate numbers
     tl.to(
         [redColorGroup.position, redNumberGroup.position], {
             x: `-=${shiftX}`
@@ -107,7 +107,100 @@ function getAnimationTimeline({
         }
     );
 
+    const pixelMeshes = redNumberMeshes;
+    const weightMeshes = redWeightMeshes;
+    const pixelNumbers = redNumbers;
+    const weightNumbers = redNumbers;
+    animateTablesToMAC({
+        pixelMeshes: redNumberMeshes,
+        weightMeshes: redWeightMeshes,
+        pixelNumbers: redNumbers,
+        weightNumbers: redNumbers,
+        shiftX: -shiftX, shiftY, tl, scene
+    })
+    animateTablesToMAC({
+        pixelMeshes: greenNumberMeshes,
+        weightMeshes: greenWeightMeshes,
+        pixelNumbers: greenNumbers,
+        weightNumbers: greenNumbers,
+        shiftX: 0, shiftY, tl, scene
+    })
+    animateTablesToMAC({
+        pixelMeshes: blueNumberMeshes,
+        weightMeshes: blueWeightMeshes,
+        pixelNumbers: blueNumbers,
+        weightNumbers: blueNumbers,
+        shiftX, shiftY, tl, scene
+    })
+
     return tl;
+}
+
+
+function animateTablesToMAC({
+    pixelMeshes, weightMeshes, 
+    pixelNumbers, weightNumbers,
+    shiftX, shiftY, tl, scene
+}) {
+    const firstMesh = pixelMeshes[0][0];
+    const cellSize = getObjectSize(firstMesh).x;
+
+    const eqnShiftX = cellSize + 10;
+    const eqnShiftY = cellSize + 10;
+    const firstMeshLocal = firstMesh.position;
+    const firstMeshGlobal = firstMesh.getWorldPosition(new THREE.Vector3());
+
+    pixelMeshes.forEach((row, i) => {
+        row.forEach((pixelMesh, j) => {
+            const pixel = pixelNumbers[i][j];
+            const weight = weightNumbers[i][j];
+            const weightMesh = weightMeshes[i][j];
+
+            const result = (pixel * weight).toFixed(2);
+            const resultMesh = getSquareTextMesh(result, cellSize, 0);
+
+            const timesMesh = getSquareTextMesh("×", cellSize, 0);
+            const equalMesh = getSquareTextMesh("=", cellSize, 0);
+
+            scene.add(timesMesh);
+            scene.add(equalMesh);
+            scene.add(resultMesh);
+
+            const pixelSrcPos = pixelMesh.getWorldPosition(new THREE.Vector3());
+            const weightSrcPos = weightMesh.getWorldPosition(new THREE.Vector3());
+            const posYDiff = - (j + i*row.length) * eqnShiftY;
+
+            timesMesh.position.x = firstMeshGlobal.x + eqnShiftX + shiftX;
+            timesMesh.position.y = firstMeshLocal.y + posYDiff;
+            equalMesh.position.x = firstMeshGlobal.x + 3*eqnShiftX + shiftX;
+            equalMesh.position.y = firstMeshLocal.y + posYDiff;
+            resultMesh.position.x = firstMeshGlobal.x + 4*eqnShiftX + shiftX;
+            resultMesh.position.y = firstMeshLocal.y + posYDiff;
+
+            const pixelMeshDstPos = new THREE.Vector3(firstMeshLocal.x, firstMeshLocal.y + posYDiff);
+            const weightMeshDstPos = new THREE.Vector3(firstMeshLocal.x + 2*eqnShiftX, firstMeshLocal.y + shiftY + posYDiff);
+
+            tl.to(pixelMesh.position, {
+                x: pixelMeshDstPos.x,
+                y: pixelMeshDstPos.y
+            }, 'mac').to(weightMesh.position, {
+                x: weightMeshDstPos.x,
+                y: weightMeshDstPos.y
+            }, 'mac').from(timesMesh.position, {
+                y: "-=10"
+            }, 'mac').from(timesMesh.material, {
+                opacity: 0
+            }, 'mac').from(equalMesh.position, {
+                y: "-=10"
+            }, 'mac').from(equalMesh.material, {
+                opacity: 0
+            }, 'mac').from(resultMesh.position, {
+                y: "-=10"
+            }, 'mac').from(resultMesh.material, {
+                opacity: 0
+            }, 'mac')
+        })
+    })
 }
 
 
@@ -116,9 +209,10 @@ function getCyanGhostSceneComps() {
     const palette = _.range(0, maxValue + 1).map(x => x/maxValue);
 
     const cellSize = 100;
-    const {group: redColorGroup, meshes: redColorMeshes} = getColorTable(floatToRed(cyanGhostRed), cellSize);
-    const {group: greenColorGroup, meshes: greenColorMeshes} = getColorTable(floatToGreen(cyanGhostGreen), cellSize);
-    const {group: blueColorGroup, meshes: blueColorMeshes} = getColorTable(floatToBlue(cyanGhostBlue), cellSize);
+    const [redNumbers, greenNumbers, blueNumbers] = [cyanGhostRed, cyanGhostGreen, cyanGhostBlue];
+    const {group: redColorGroup, meshes: redColorMeshes} = getColorTable(floatToRed(redNumbers), cellSize);
+    const {group: greenColorGroup, meshes: greenColorMeshes} = getColorTable(floatToGreen(greenNumbers), cellSize);
+    const {group: blueColorGroup, meshes: blueColorMeshes} = getColorTable(floatToBlue(blueNumbers), cellSize);
 
     redColorGroup.position.z += 10;
     greenColorGroup.position.z += 10;
@@ -127,7 +221,6 @@ function getCyanGhostSceneComps() {
     [redColorMeshes, greenColorMeshes, blueColorMeshes].forEach(meshes => {
         meshes.flat().forEach(mesh => {
             mesh.material.blending = THREE.AdditiveBlending;
-            mesh.material.transparent = true;
         });
     });
 
@@ -136,7 +229,7 @@ function getCyanGhostSceneComps() {
     const {group: greenNumberGroup, meshes: greenNumberMeshes} = getNumberTable(idxToNumber(cyanGhostGreen, palette), cellSize, strokeWidth);
     const {group: blueNumberGroup, meshes: blueNumberMeshes} = getNumberTable(idxToNumber(cyanGhostBlue, palette), cellSize, strokeWidth);
 
-    const weightColor = "#f58800";
+    const weightColor = "#00008B";
     const {group: redWeightGroup, meshes: redWeightMeshes} = getNumberTable(idxToNumber(cyanGhostRed, palette), cellSize, strokeWidth, 0, 0, 2, weightColor);
     const {group: greenWeightGroup, meshes: greenWeightMeshes} = getNumberTable(idxToNumber(cyanGhostGreen, palette), cellSize, strokeWidth, 0, 0, 2, weightColor);
     const {group: blueWeightGroup, meshes: blueWeightMeshes} = getNumberTable(idxToNumber(cyanGhostBlue, palette), cellSize, strokeWidth, 0, 0, 2, weightColor);
@@ -151,6 +244,7 @@ function getCyanGhostSceneComps() {
         redWeightGroup, redWeightMeshes,
         greenWeightGroup, greenWeightMeshes,
         blueWeightGroup, blueWeightMeshes,
+        redNumbers, greenNumbers, blueNumbers,
     };
 }
 

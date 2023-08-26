@@ -2,8 +2,9 @@ import * as THREE from '../lib/three.module.js';
 
 
 export function getSquareTextMesh(
-    text, size, fontSize='20pt', strokeWidth=3,
-    strokeColor='black', fontFamily='Quicksand'
+    text, size, strokeWidth=3,
+    strokeColor='black', fontSize=`${size*.4}px`,
+    fontFamily='Quicksand'
 ) {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
@@ -83,8 +84,8 @@ export function getNumberTable(
         cell => {
             const x = cell.toFixed(precision)
             return getSquareTextMesh(
-                `${x}`, cellSize, fontSize,
-                strokeWidth, strokeColor
+                `${x}`, cellSize, strokeWidth, strokeColor,
+                fontSize, 
             );
         },
         cellSize, cellMarginX, cellMarginY
@@ -117,10 +118,12 @@ export function getColorSquare(
 
         material = new THREE.MeshBasicMaterial({
             map: texture,
+            transparent: true,
         })
     } else {
         material = new THREE.MeshBasicMaterial({
             color: fillColor,
+            transparent: true,
         })
     }
     var mesh = new THREE.Mesh(new THREE.PlaneGeometry(size, size), material)
