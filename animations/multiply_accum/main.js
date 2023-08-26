@@ -218,7 +218,12 @@ function getCyanGhostSceneComps() {
     const palette = _.range(0, maxValue + 1).map(x => x/maxValue);
 
     const cellSize = 100;
-    const [redNumbers, greenNumbers, blueNumbers] = [cyanGhostRed, cyanGhostGreen, cyanGhostBlue];
+    const [redIdxs, greenIdxs, blueIdxs] = [cyanGhostRed, cyanGhostGreen, cyanGhostBlue];
+    const [redNumbers, greenNumbers, blueNumbers] = [
+        idxToNumber(redIdxs, palette),
+        idxToNumber(greenIdxs, palette),
+        idxToNumber(blueIdxs, palette)
+    ];
     const {group: redColorGroup, meshes: redColorMeshes} = getColorTable(floatToRed(redNumbers), cellSize);
     const {group: greenColorGroup, meshes: greenColorMeshes} = getColorTable(floatToGreen(greenNumbers), cellSize);
     const {group: blueColorGroup, meshes: blueColorMeshes} = getColorTable(floatToBlue(blueNumbers), cellSize);
@@ -234,14 +239,14 @@ function getCyanGhostSceneComps() {
     });
 
     const strokeWidth = cellSize / 100;
-    const {group: redNumberGroup, meshes: redNumberMeshes} = getNumberTable(idxToNumber(cyanGhostRed, palette), cellSize, strokeWidth);
-    const {group: greenNumberGroup, meshes: greenNumberMeshes} = getNumberTable(idxToNumber(cyanGhostGreen, palette), cellSize, strokeWidth);
-    const {group: blueNumberGroup, meshes: blueNumberMeshes} = getNumberTable(idxToNumber(cyanGhostBlue, palette), cellSize, strokeWidth);
+    const {group: redNumberGroup, meshes: redNumberMeshes} = getNumberTable(redNumbers, cellSize, strokeWidth);
+    const {group: greenNumberGroup, meshes: greenNumberMeshes} = getNumberTable(greenNumbers, cellSize, strokeWidth);
+    const {group: blueNumberGroup, meshes: blueNumberMeshes} = getNumberTable(blueNumbers, cellSize, strokeWidth);
 
     const weightColor = "#00008B";
-    const {group: redWeightGroup, meshes: redWeightMeshes} = getNumberTable(idxToNumber(cyanGhostRed, palette), cellSize, strokeWidth, 0, 0, 2, weightColor);
-    const {group: greenWeightGroup, meshes: greenWeightMeshes} = getNumberTable(idxToNumber(cyanGhostGreen, palette), cellSize, strokeWidth, 0, 0, 2, weightColor);
-    const {group: blueWeightGroup, meshes: blueWeightMeshes} = getNumberTable(idxToNumber(cyanGhostBlue, palette), cellSize, strokeWidth, 0, 0, 2, weightColor);
+    const {group: redWeightGroup, meshes: redWeightMeshes} = getNumberTable(redNumbers, cellSize, strokeWidth, 0, 0, 2, weightColor);
+    const {group: greenWeightGroup, meshes: greenWeightMeshes} = getNumberTable(greenNumbers, cellSize, strokeWidth, 0, 0, 2, weightColor);
+    const {group: blueWeightGroup, meshes: blueWeightMeshes} = getNumberTable(blueNumbers, cellSize, strokeWidth, 0, 0, 2, weightColor);
 
     return {
         redColorGroup, redColorMeshes,
