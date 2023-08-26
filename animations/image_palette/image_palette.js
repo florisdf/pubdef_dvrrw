@@ -3,8 +3,7 @@ import * as THREE from '../lib/three.module.js';
 
 export function getSquareTextMesh(
     text, size, fontSize='20pt', strokeWidth=3,
-    strokeColor='black', fillColor='white',
-    fontFamily='Quicksand'
+    strokeColor='black', fontFamily='Quicksand'
 ) {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
@@ -17,8 +16,6 @@ export function getSquareTextMesh(
     ctx.font = `${fontSize} ${fontFamily}`;
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    ctx.fillStyle = fillColor;
-    ctx.fillRect(0, 0, size, size);
     ctx.fillStyle = strokeColor;
     ctx.fillText(text, size / 2, size / 2)
     if (strokeWidth > 0) {

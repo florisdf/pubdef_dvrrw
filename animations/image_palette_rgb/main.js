@@ -7,6 +7,7 @@ import * as THREE from '../lib/three.module.js';
 import waldek_red from './waldek_the_red.js';
 import waldek_green from './waldek_the_green.js';
 import waldek_blue from './waldek_the_blue.js';
+import GSDevTools from '../lib/gsap-shockingly-green/GSDevTools.js';
 
 
 function getAnimationTimeline(sceneCompsRed, sceneCompsGreen, sceneCompsBlue) {
@@ -65,6 +66,7 @@ function getAnimationTimeline(sceneCompsRed, sceneCompsGreen, sceneCompsBlue) {
     allSceneComps.forEach((sceneComps, i, arr) =>  {
         const {tl: tlSub, meshCloneGroup} = animatePaletteToTable({
             scene: scene,
+            pixelFlyDuration: 3,
             ...sceneComps
         });
         if (i < arr.length - 1) {
@@ -118,6 +120,7 @@ function main() {
     const sceneCompsBlue = getNumberTableWithPalette(waldek_blue, paletteTable, floatToBlue)
 
     const tl = getAnimationTimeline(sceneCompsRed, sceneCompsGreen, sceneCompsBlue);
+    GSDevTools.create({animation: tl});
     tl.play();
 }
 

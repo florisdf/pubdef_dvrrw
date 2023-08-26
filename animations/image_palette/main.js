@@ -4,6 +4,7 @@ import {
 } from './image_palette.js';
 import * as THREE from '../lib/three.module.js';
 import waldek from './waldek_the_gray.js';
+import GSDevTools from '../lib/gsap-shockingly-green/GSDevTools.js';
 
 
 function getAnimationTimeline(sceneComps) {
@@ -36,7 +37,7 @@ function getAnimationTimeline(sceneComps) {
     render()
 
     const tl = gsap.timeline({
-        delay: 0.5,
+        delay: 5,
         paused: true,
         onUpdate: render,
         defaults: {
@@ -78,6 +79,7 @@ function main() {
     const sceneComps = getNumberTableWithPalette(waldek, paletteTable, floatToGray)
 
     const tl = getAnimationTimeline(sceneComps);
+    GSDevTools.create({animation: tl});
     tl.play();
 }
 

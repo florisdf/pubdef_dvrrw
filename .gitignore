@@ -7,3 +7,4 @@ components.d.ts
 *.swp
 .venv
 .ipynb_checkpoints
+gsap-shockingly-green
