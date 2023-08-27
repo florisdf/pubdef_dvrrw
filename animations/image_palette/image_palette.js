@@ -4,6 +4,7 @@ import * as THREE from '../lib/three.module.js';
 export function getSquareTextMesh(
     text, size, strokeWidth=3,
     strokeColor='black', fontSize=`${size*.4}px`,
+    fillColor=null,
     fontFamily='Quicksand'
 ) {
     const canvas = document.createElement("canvas");
@@ -14,6 +15,10 @@ export function getSquareTextMesh(
     canvas.height = Math.floor(size * scale);
     ctx.scale(scale, scale);
 
+    if (fillColor !== null) {
+        ctx.fillStyle = fillColor;
+        ctx.fillRect(0, 0, size, size);
+    }
     ctx.font = `${fontSize} ${fontFamily}`;
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
@@ -77,7 +82,7 @@ export function getNumberTable(
     cellMarginY=cellMarginX,
     precision=2,
     strokeColor='black',
-    fontSize=`${cellSize*.4}px`,
+    fontSize=`${cellSize*.4}px`, fillColor=null,
 ) {
     return getTable(
         numbers,
@@ -85,7 +90,7 @@ export function getNumberTable(
             const x = cell.toFixed(precision)
             return getSquareTextMesh(
                 `${x}`, cellSize, strokeWidth, strokeColor,
-                fontSize, 
+                fontSize, fillColor,
             );
         },
         cellSize, cellMarginX, cellMarginY
