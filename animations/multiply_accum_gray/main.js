@@ -8,6 +8,7 @@ import * as THREE from '../lib/three.module.js';
 import ghostIdxs from './ghost_gray.js';
 import pacmanIdxs from './pacman_gray.js';
 
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 
 function elWiseProduct(pixelNumbers, weightNumbers) {
@@ -50,18 +51,82 @@ function getHLineMesh({
     return mesh;
 }
 
+class OperandBox {
+    constructor({
+        color,
+        opacity,
+        width,
+        height,
+        depth,
+        opChar,
+        opSize = height * 2/3,
+    }) {
+        const geometry = new THREE.BoxGeometry(width, height, depth); 
+        const boxColor = new THREE.Color(color);
+        const fillMaterial = new THREE.MeshBasicMaterial({
+            color: boxColor,
+            transparent: true,
+            opacity: opacity,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+        });
+        const boxMesh = new THREE.Mesh(geometry, fillMaterial);
+        const edgesMesh = new THREE.LineSegments(
+            new THREE.EdgesGeometry(geometry),
+            new THREE.LineBasicMaterial({color: boxColor})
+        );
+
+        const boxGroup = new THREE.Group();
+        boxGroup.add(boxMesh);
+        boxGroup.add(edgesMesh);
+        this.box = boxGroup;
+
+        const operandMesh = getSquareTextMesh(opChar, opSize*3/2, 0, 'black', `${opSize}px`);
+        this.operand = operandMesh;
+
+        this.group = new THREE.Group();
+        this.group.add(this.operand);
+        this.group.add(this.box);
+        
+        this.width = width;
+        this.height = height;
+        this.depth = depth;
+    }
+}
+
+function getConnectingOpBox(mesh1, mesh2, opChar, color) {
+    const cellSize = getObjectSize(mesh1.clone());
+    const center1 = mesh1.localToWorld(mesh1.position.clone());
+    const center2 = mesh2.localToWorld(mesh2.position.clone());
+    console.log(cellSize)
+    // Operand box for multiplication
+    const opBox = new OperandBox({
+        color: color,
+        opacity: 0.1,
+        width: center2.x - center1.x,
+        height: cellSize.y,
+        depth: cellSize.x,
+        opChar: opChar,
+        opSize: cellSize.y,
+    })
+    opBox.group.position.x = center1.x + opBox.width / 2;
+    opBox.group.position.y = mesh1.position.y;
+    opBox.group.position.z = - mesh1.position.x;
+    return opBox;
+}
+
+
 function getAnimationTimeline({
     colorGroup, colorMeshes,
     numberGroup, numberMeshes,
     weightColorGroup, weightColorMeshes,
     weightNumberGroup, weightNumberMeshes,
     resultNumberGroup, resultNumberMeshes,
-    timesMesh, equalMesh,
     pixelNumbers, weightNumbers, resultNumbers
 }) {
     // Put in initial positions
     const tableSize = getObjectSize(colorGroup);
-    const marginX = 400;
+    const marginX = 200;
     const shiftX = tableSize.x + marginX;
     const shiftY = tableSize.y + 500;
 
@@ -75,31 +140,16 @@ function getAnimationTimeline({
 
     resultNumberGroup.position.x += shiftX;
 
-    const timesMesh2 = timesMesh.clone();
+    numberGroup.position.x += tableSize.x/2;
+    weightNumberGroup.position.x += tableSize.x/2;
+    resultNumberGroup.position.x += tableSize.x/2;
 
-    timesMesh.position.x -= marginX / 2;
-    timesMesh.position.y -= tableSize.y / 2;
-    equalMesh.position.x += tableSize.x + marginX / 2;
-    equalMesh.position.y -= tableSize.y / 2;
+    numberGroup.rotation.y = Math.PI/2;
+    weightNumberGroup.rotation.y = Math.PI/2;
+    resultNumberGroup.rotation.y = Math.PI/2;
 
-    timesMesh2.position.x = timesMesh.position.x;
-    timesMesh2.position.y = timesMesh.position.y - shiftY;
-
-
-    const resultBBox = new THREE.Box3();
-    resultBBox.setFromObject(resultNumberGroup);
-
-    // Line for summation
-    const resultCenter = getObjectCenter(resultNumberGroup);
-    const resultSize = getObjectSize(resultNumberGroup);
-    const lineMargin = 100;
-    const lineMesh = getHLineMesh({
-        length: resultSize.x*1.1,
-        lineCap: 'round',
-        lineWidth: 5
-    });
-    lineMesh.position.x = resultCenter.x;
-    lineMesh.position.y = resultCenter.y - resultSize.y / 2 - lineMargin;
+    const opBoxProd = getConnectingOpBox(numberMeshes[0][0], weightNumberMeshes[0][0], "×", 'darkorange');
+    const opBoxEq = getConnectingOpBox(weightNumberMeshes[0][0], resultNumberMeshes[0][0], "=", 'darkorange');
 
     // Create scene
     const sceneGroup = new THREE.Group();
@@ -111,11 +161,8 @@ function getAnimationTimeline({
 
     sceneGroup.add(resultNumberGroup);
 
-    sceneGroup.add(timesMesh);
-    sceneGroup.add(equalMesh);
-    sceneGroup.add(timesMesh2);
-
-    sceneGroup.add(lineMesh);
+    sceneGroup.add(opBoxProd.group);
+    sceneGroup.add(opBoxEq.group);
 
     const scene = new THREE.Scene();
     scene.add(sceneGroup);
@@ -140,14 +187,21 @@ function getAnimationTimeline({
     container.appendChild(renderEl);
     renderer.setSize(canvasWidth, canvasHeight);
 
+    const controls = new OrbitControls(camera, renderEl);
+    controls.update()
+
     function render() {
+        [opBoxProd, opBoxEq].forEach(b => b.operand.lookAt(camera.position))
+        controls.update()
         renderer.render(scene, camera);
+        requestAnimationFrame(render);
     }
+    render()
 
     // Animate
     const tl = gsap.timeline({
         delay: 0.5,
-        onUpdate: render,
+        //onUpdate: render,
         defaults: {
             ease: "power2.inOut" 
         },
@@ -167,16 +221,28 @@ function getGhostSceneComps(pixelNumbers, weightNumbers) {
     colorGroup.position.z += 10;
 
     const strokeWidth = cellSize / 100;
-    const {group: numberGroup, meshes: numberMeshes} = getNumberTable(pixelNumbers, cellSize, strokeWidth);
+    const cellMarginX = 0;
+    const cellMarginY = cellMarginX;
+    const precision = 2;
+    const strokeColor = 'black';
+    const fontSize = `${cellSize*.4}px`;
+    const fillColor = 'white';
+    const numberTableArgs = [
+        cellSize, strokeWidth,
+        cellMarginX, cellMarginY,
+        precision, strokeColor,
+        fontSize, fillColor
+    ];
+
+    const {group: numberGroup, meshes: numberMeshes} = getNumberTable(
+        pixelNumbers, ...numberTableArgs
+    );
 
     const {group: weightColorGroup, meshes: weightColorMeshes} = getColorTable(floatToGray(weightNumbers), cellSize);
-    const {group: weightNumberGroup, meshes: weightNumberMeshes} = getNumberTable(weightNumbers, cellSize, strokeWidth);
+    const {group: weightNumberGroup, meshes: weightNumberMeshes} = getNumberTable(weightNumbers, ...numberTableArgs);
 
     const resultNumbers = elWiseProduct(pixelNumbers, weightNumbers);
-    const {group: resultNumberGroup, meshes: resultNumberMeshes} = getNumberTable(resultNumbers, cellSize, strokeWidth);
-
-    const timesMesh = getSquareTextMesh("×", cellSize * 8, 0);
-    const equalMesh = getSquareTextMesh("=", cellSize * 8, 0);
+    const {group: resultNumberGroup, meshes: resultNumberMeshes} = getNumberTable(resultNumbers, ...numberTableArgs);
 
     return {
         colorGroup, colorMeshes,
@@ -185,7 +251,6 @@ function getGhostSceneComps(pixelNumbers, weightNumbers) {
         weightNumberGroup, weightNumberMeshes,
         resultNumberGroup, resultNumberMeshes,
         pixelNumbers, weightNumbers, resultNumbers,
-        timesMesh, equalMesh
     };
 }
 
