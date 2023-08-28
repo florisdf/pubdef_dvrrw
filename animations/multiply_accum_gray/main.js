@@ -1,168 +1,124 @@
 import {
     getObjectCenter, getObjectSize,
-    floatToGray, floatToGreen, floatToBlue,
-    getNumberTable, getColorTable, idxToNumber,
-    getSquareTextMesh
+    idxToNumber,
 } from '../image_palette/image_palette.js';
-import * as THREE from '../lib/three.module.js';
 import ghostIdxs from './ghost_gray.js';
 import pacmanIdxs from './pacman_gray.js';
 
+import { getSquareTextMesh, getColoredNumberTable, getColorTable } from './pixel_tables.js';
+import { OperandBox } from './operand_box.js';
+
+import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-
-function elWiseProduct(pixelNumbers, weightNumbers) {
-    return pixelNumbers.map((row, i) => row.map((number, j) => number * weightNumbers[i][j]));
-}
+const KUL_RGB = '0,64,122'
 
 
-function getHLineMesh({
-    length,
-    lineCap = 'round',
-    lineWidth,
-    color = 'black',
-}) {
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-
-    const scale = window.devicePixelRatio;
-    canvas.width = Math.floor(length * scale);
-    canvas.height = Math.floor(lineWidth * scale);
-    ctx.scale(scale, scale);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = lineWidth;
-    ctx.lineCap = lineCap;
-    const offsetX = lineCap === 'round' ? lineWidth/2 : 0;
-    const offsetY = lineWidth/2;
-    ctx.beginPath();
-    ctx.moveTo(offsetX, offsetY);
-    ctx.lineTo(length - offsetX, offsetY);
-    ctx.stroke();
-
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.needsUpdate = true
-    const material = new THREE.MeshBasicMaterial({
-        map: texture,
-        transparent: true,
-        side: THREE.DoubleSide,
-    })
-    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(length, lineWidth), material)
-
-    return mesh;
-}
-
-class OperandBox {
-    constructor({
-        color,
-        opacity,
-        width,
-        height,
-        depth,
-        opChar,
-        opSize = height * 2/3,
-    }) {
-        const geometry = new THREE.BoxGeometry(width, height, depth); 
-        const boxColor = new THREE.Color(color);
-        const fillMaterial = new THREE.MeshBasicMaterial({
-            color: boxColor,
-            transparent: true,
-            opacity: opacity,
-            side: THREE.DoubleSide,
-            depthWrite: false,
-        });
-        const boxMesh = new THREE.Mesh(geometry, fillMaterial);
-        const edgesMesh = new THREE.LineSegments(
-            new THREE.EdgesGeometry(geometry),
-            new THREE.LineBasicMaterial({color: boxColor})
-        );
-
-        const boxGroup = new THREE.Group();
-        boxGroup.add(boxMesh);
-        boxGroup.add(edgesMesh);
-        this.box = boxGroup;
-
-        const operandMesh = getSquareTextMesh(opChar, opSize*3/2, 0, 'black', `${opSize}px`);
-        this.operand = operandMesh;
-
-        this.group = new THREE.Group();
-        this.group.add(this.operand);
-        this.group.add(this.box);
-        
-        this.width = width;
-        this.height = height;
-        this.depth = depth;
-    }
-}
-
-function getConnectingOpBox(mesh1, mesh2, opChar, color) {
-    const cellSize = getObjectSize(mesh1.clone());
-    const center1 = mesh1.localToWorld(mesh1.position.clone());
-    const center2 = mesh2.localToWorld(mesh2.position.clone());
-    console.log(cellSize)
-    // Operand box for multiplication
-    const opBox = new OperandBox({
-        color: color,
-        opacity: 0.1,
-        width: center2.x - center1.x,
-        height: cellSize.y,
-        depth: cellSize.x,
-        opChar: opChar,
-        opSize: cellSize.y,
-    })
-    opBox.group.position.x = center1.x + opBox.width / 2;
-    opBox.group.position.y = mesh1.position.y;
-    opBox.group.position.z = - mesh1.position.x;
-    return opBox;
+function elWiseProduct(inputNumbers, weightNumbers) {
+    return inputNumbers.map((row, i) => row.map((number, j) => number * weightNumbers[i][j]));
 }
 
 
 function getAnimationTimeline({
-    colorGroup, colorMeshes,
-    numberGroup, numberMeshes,
-    weightColorGroup, weightColorMeshes,
-    weightNumberGroup, weightNumberMeshes,
-    resultNumberGroup, resultNumberMeshes,
-    pixelNumbers, weightNumbers, resultNumbers
+    inputGroup, inputMeshes,
+    inputColorGroup, inputColorMeshes,
+    weightGroup, weightMeshes,
+    productGroup, productMeshes,
+    macMesh,
 }) {
     // Put in initial positions
-    const tableSize = getObjectSize(colorGroup);
-    const marginX = 200;
-    const shiftX = tableSize.x + marginX;
+    const tableSize = getObjectSize(inputGroup);
+    const shiftX = 1000;
     const shiftY = tableSize.y + 500;
 
-    const cellSize = getObjectSize(colorMeshes[0][0]);
+    const cellSize = getObjectSize(inputMeshes[0][0]);
 
-    colorGroup.position.y -= shiftY;
-    weightColorGroup.position.y -= shiftY;
+    inputColorGroup.position.x -= shiftX;
+    inputGroup.position.x -= shiftX;
 
-    numberGroup.position.x -= shiftX;
-    colorGroup.position.x -= shiftX;
+    productGroup.position.x += shiftX;
 
-    resultNumberGroup.position.x += shiftX;
+    macMesh.position.x += 1.5*shiftX;
+    macMesh.position.y -= tableSize.y/2;
+    macMesh.position.z -= tableSize.x/2;
 
-    numberGroup.position.x += tableSize.x/2;
-    weightNumberGroup.position.x += tableSize.x/2;
-    resultNumberGroup.position.x += tableSize.x/2;
+    inputColorGroup.rotation.y = Math.PI/2;
+    inputGroup.rotation.y = Math.PI/2;
+    weightGroup.rotation.y = Math.PI/2;
+    productGroup.rotation.y = Math.PI/2;
+    macMesh.rotation.y = Math.PI/2;
 
-    numberGroup.rotation.y = Math.PI/2;
-    weightNumberGroup.rotation.y = Math.PI/2;
-    resultNumberGroup.rotation.y = Math.PI/2;
+    productMeshes.flat().forEach(m => {
+        m.material.depthWrite = false;
+    });
 
-    const opBoxProd = getConnectingOpBox(numberMeshes[0][0], weightNumberMeshes[0][0], "×", 'darkorange');
-    const opBoxEq = getConnectingOpBox(weightNumberMeshes[0][0], resultNumberMeshes[0][0], "=", 'darkorange');
+    const opBoxProd = new OperandBox({
+        color: 'darkblue',
+        opacity: 0.1,
+        width: shiftX,
+        heightStart: cellSize.y,
+        heightEnd: cellSize.y,
+        opChar: "×",
+        opSize: cellSize.y,
+    });
+    opBoxProd.group.position.x -= shiftX;
+    opBoxProd.group.position.y -= cellSize.y/2;
+    opBoxProd.group.position.z -= cellSize.x/2;
+
+    const opBoxEq = new OperandBox({
+        color: 'darkblue',
+        opacity: 0.1,
+        width: shiftX,
+        heightStart: cellSize.y,
+        heightEnd: cellSize.y,
+        opChar: "=",
+        opSize: cellSize.y,
+    });
+    opBoxEq.group.position.y -= cellSize.y/2;
+    opBoxEq.group.position.z -= cellSize.x/2;
+
+    const opBoxSum = new OperandBox({
+        color: 'darkgreen',
+        opacity: 0.05,
+        width: shiftX/2,
+        heightStart: tableSize.y,
+        heightEnd: cellSize.y,
+        opChar: "+",
+        opSize: (tableSize.y + cellSize.y)/2,
+    });
+    opBoxSum.group.position.x += shiftX;
+    opBoxSum.group.position.y -= tableSize.y/2;
+    opBoxSum.group.position.z -= tableSize.x/2;
+
+    const opBoxActiv = new OperandBox({
+        color: 'darkred',
+        opacity: 0.1,
+        width: shiftX,
+        heightStart: cellSize.y,
+        heightEnd: cellSize.y,
+        opChar: ">",
+        opSize: cellSize.y,
+    });
+    opBoxActiv.group.position.x += 2*shiftX;
+    opBoxActiv.group.position.y -= tableSize.y/2;
+    opBoxActiv.group.position.z -= tableSize.x/2;
 
     // Create scene
     const sceneGroup = new THREE.Group();
-    sceneGroup.add(numberGroup);
-    sceneGroup.add(colorGroup);
+    sceneGroup.add(inputGroup);
+    sceneGroup.add(inputColorGroup);
 
-    sceneGroup.add(weightColorGroup);
-    sceneGroup.add(weightNumberGroup);
+    sceneGroup.add(weightGroup);
 
-    sceneGroup.add(resultNumberGroup);
+    sceneGroup.add(productGroup);
 
     sceneGroup.add(opBoxProd.group);
     sceneGroup.add(opBoxEq.group);
+
+    sceneGroup.add(opBoxSum.group);
+    sceneGroup.add(macMesh);
+
+    // sceneGroup.add(opBoxActiv.group);
 
     const scene = new THREE.Scene();
     scene.add(sceneGroup);
@@ -175,9 +131,17 @@ function getAnimationTimeline({
     const camera = new THREE.PerspectiveCamera(fov, canvasWidth/canvasHeight, 1, 100000);
 
     const sceneCenter = getObjectCenter(sceneGroup);
-    camera.position.x = sceneCenter.x;
-    camera.position.y = sceneCenter.y;
-    camera.position.z += 3500;
+    // camera.position.x = sceneCenter.x;
+    // camera.position.y = sceneCenter.y;
+    // camera.position.z += 3500;
+
+    camera.position.x = 2500
+    camera.position.y = weightGroup.position.y - tableSize.y / 2;
+    camera.position.z = 1250
+
+    camera.rotation.x = 0
+    camera.rotation.y = Math.PI/4
+    camera.rotation.z = 0
 
     // Render
     const container = document.getElementById('container');
@@ -187,70 +151,146 @@ function getAnimationTimeline({
     container.appendChild(renderEl);
     renderer.setSize(canvasWidth, canvasHeight);
 
-    const controls = new OrbitControls(camera, renderEl);
-    controls.update()
+    // const controls = new OrbitControls(camera, renderEl);
+    // controls.update()
 
     function render() {
-        [opBoxProd, opBoxEq].forEach(b => b.operand.lookAt(camera.position))
-        controls.update()
-        renderer.render(scene, camera);
-        requestAnimationFrame(render);
+        [opBoxProd, opBoxEq, opBoxSum].forEach(b => b.operand.lookAt(camera.position))
+        // controls.update()
+        renderer.render(scene, camera); 
     }
-    render()
+
+    function animateControl() {
+        render();
+        requestAnimationFrame(animateControl);
+    }
 
     // Animate
     const tl = gsap.timeline({
-        delay: 0.5,
-        //onUpdate: render,
+        delay: 2,
+        onUpdate: render,
+        // onComplete: animateControl,
         defaults: {
             ease: "power2.inOut" 
         },
     });
 
-    const colorMaterials = colorMeshes.flat().map(mesh => mesh.material);
-    const weightMaterials = weightColorMeshes.flat().map(mesh => mesh.material);
+    tl.from(inputMeshes.flat().map(m => m.material), {
+        opacity: 0,
+        delay: 2,
+    }).to(inputColorMeshes.flat().map(m => m.material), {
+        opacity: 0,
+        delay: 2,
+    }, '<')
 
+    tl.from(camera.position, {
+        x: inputColorGroup.position.x + 2000,
+        y: inputColorGroup.position.y - tableSize.y / 2,
+        z: inputColorGroup.position.z - tableSize.x / 2,
+        duration: 2,
+        delay: 2,
+    }).from(camera.rotation, {
+        y: Math.PI / 2,
+        duration: 2
+    }, '<')
+
+    tl.from(weightMeshes.flat().map(m => m.material), {
+        opacity: 0,
+        delay: 2,
+    }).from(weightGroup.position, {
+        y: "-=100",
+    }, '<')
+
+    tl.from(opBoxProd, {width: 0, duration: 2, delay: 2})
+        .from(opBoxProd, {opSize: 0, duration: 2}, '<')
+        .from(opBoxEq, {width: 0, duration: 2})
+        .from(opBoxEq, {opSize: 0, duration: 2}, '<');
+    const opBoxPositions = [opBoxProd.group.position, opBoxEq.group.position];
+    productMeshes.forEach((row, i, arr) => {
+        const duration = 0.05;
+        row.forEach((mesh, j) => {
+            const dur = (i !== 0 || j > 5) ? duration : duration * 10;
+            if (j !== 0) {
+                tl.to(opBoxPositions, {z: `-=${cellSize.x}`, duration: dur})
+            }
+            tl.from(mesh.material, {opacity: 0, duration: dur});
+        });
+        if (i < arr.length - 1) {
+            tl.to(opBoxPositions, {y: `-=${cellSize.y}`, z: `+=${(row.length - 1)*cellSize.x}`, duration: duration});
+        }
+    });
+    tl.to([opBoxProd, opBoxEq], {width: 0});
+
+    tl.from(opBoxSum, {heightEnd: opBoxSum.heightStart, width: 0, duration: 2}, '<')
+        .from(opBoxSum, {opSize: 0, duration: 2}, '<')
+        .from(macMesh.material, {
+            opacity: 0,
+        }).to(camera.rotation, {
+            y: Math.PI/2,
+            yoyo: true,
+            repeat: 1,
+            repeatDelay: 3,
+        }).to(camera.position, {
+            x: macMesh.position.x + 400,
+            z: macMesh.position.z,
+            yoyo: true,
+            repeat: 1,
+            repeatDelay: 3,
+        }, '<');
     return tl;
 }
 
-
-function getGhostSceneComps(pixelNumbers, weightNumbers) {
+function getGhostSceneComps(inputNumbers, weightNumbers) {
     const cellSize = 100;
-    const {group: colorGroup, meshes: colorMeshes} = getColorTable(floatToGray(pixelNumbers), cellSize);
-
-    colorGroup.position.z += 10;
-
     const strokeWidth = cellSize / 100;
-    const cellMarginX = 0;
-    const cellMarginY = cellMarginX;
-    const precision = 2;
-    const strokeColor = 'black';
-    const fontSize = `${cellSize*.4}px`;
-    const fillColor = 'white';
-    const numberTableArgs = [
-        cellSize, strokeWidth,
-        cellMarginX, cellMarginY,
-        precision, strokeColor,
-        fontSize, fillColor
-    ];
 
-    const {group: numberGroup, meshes: numberMeshes} = getNumberTable(
-        pixelNumbers, ...numberTableArgs
-    );
+    const fillOpacity = 0.05;
+    const numberToColor = x => {
+        x = Math.round(x * 30 + 70);
+        return `hsl(0, 0%, ${x}%)`;
+    };
 
-    const {group: weightColorGroup, meshes: weightColorMeshes} = getColorTable(floatToGray(weightNumbers), cellSize);
-    const {group: weightNumberGroup, meshes: weightNumberMeshes} = getNumberTable(weightNumbers, ...numberTableArgs);
+    const {group: inputGroup, meshes: inputMeshes} = getColoredNumberTable({
+        numbers: inputNumbers,
+        numberToColor,
+        cellSize,
+        strokeWidth,
+    });
+    const {group: inputColorGroup, meshes: inputColorMeshes} = getColorTable({
+        colors: inputNumbers.map(row => row.map(x => {
+            x = Math.round(x*255);
+            return `rgb(${x}, ${x}, ${x})`;
+        })),
+        cellSize,
+    });
 
-    const resultNumbers = elWiseProduct(pixelNumbers, weightNumbers);
-    const {group: resultNumberGroup, meshes: resultNumberMeshes} = getNumberTable(resultNumbers, ...numberTableArgs);
+    const {group: weightGroup, meshes: weightMeshes} = getColoredNumberTable({
+        numbers: weightNumbers,
+        numberToColor,
+        cellSize,
+        strokeWidth,
+    });
+
+    const productNumbers = elWiseProduct(inputNumbers, weightNumbers);
+    const {group: productGroup, meshes: productMeshes} = getColoredNumberTable({
+        numbers: productNumbers,
+        numberToColor: x => {
+            x = Math.round(x * 30 + 70);
+            return `hsl(240, 50%, ${x}%)`;
+        },
+        cellSize,
+        strokeWidth,
+    });
+
+    const macResult = (productNumbers.flat().reduce((acc, curr) => acc + curr, 0)).toFixed(1);
+    const macMesh = getSquareTextMesh({text: macResult, size: cellSize, fillColor: 'white'});
 
     return {
-        colorGroup, colorMeshes,
-        numberGroup, numberMeshes,
-        weightColorGroup, weightColorMeshes,
-        weightNumberGroup, weightNumberMeshes,
-        resultNumberGroup, resultNumberMeshes,
-        pixelNumbers, weightNumbers, resultNumbers,
+        inputGroup, inputMeshes,
+        inputColorGroup, inputColorMeshes,
+        weightGroup, weightMeshes,
+        productGroup, productMeshes,
+        macMesh,
     };
 }
 
@@ -258,10 +298,10 @@ function getGhostSceneComps(pixelNumbers, weightNumbers) {
 function main() {
     const maxValue = 100;
     const palette = _.range(0, maxValue + 1).map(x => x/maxValue);
-    const pixelNumbers = idxToNumber(ghostIdxs, palette);
-    const weightNumbers = idxToNumber(pacmanIdxs, palette);
+    const inputNumbers = idxToNumber(ghostIdxs, palette);
+    const weightNumbers = idxToNumber(ghostIdxs, palette);
 
-    const tl = getAnimationTimeline(getGhostSceneComps(pixelNumbers, weightNumbers));
+    const tl = getAnimationTimeline(getGhostSceneComps(inputNumbers, weightNumbers));
     tl.play();
 }
 
