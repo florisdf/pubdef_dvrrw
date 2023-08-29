@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { getSquareTextMesh } from './pixel_tables.js';
+import { getTextMesh } from './pixel_tables.js';
 
 
 export class OperandBox {
@@ -93,18 +93,22 @@ export class OperandBox {
         const frustumGroup = new THREE.Group();
         frustumGroup.add(frustumMesh);
         frustumGroup.add(edgesMesh);
+        frustumGroup.name = 'frustum';
         this.frustum = frustumGroup;
 
-        const opMeshSize = this.#opSize*3/2;
-        const operandMesh = getSquareTextMesh({
+        const operandMesh = getTextMesh({
             text: this.#opChar,
-            size: opMeshSize, strokeWidth: 0,
+            height: this.#opSize*3/2, strokeWidth: 0,
             strokeColor: this.#color, fontSize: `${this.#opSize}px`,
         });
+        const opMeshSize = new THREE.Box3().setFromObject(operandMesh).getSize(new THREE.Vector3());
+        operandMesh.geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(-opMeshSize.x/2, opMeshSize.y/2, 0));
         operandMesh.rotation.y = - Math.PI / 2;
         operandMesh.position.x = this.#startWidth/2;
-        operandMesh.position.y = opMeshSize/2 - this.#startHeight/2;
-        operandMesh.position.z = (- opMeshSize + this.#depth)/2;
+        operandMesh.position.y = - this.#startHeight/2;
+        operandMesh.position.z = this.#depth/2;
+        operandMesh.material.depthWrite = false;
+        operandMesh.name = 'operand';
         this.operand = operandMesh;
 
         this.group.add(this.operand);

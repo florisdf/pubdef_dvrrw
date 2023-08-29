@@ -92,29 +92,61 @@ export function getSquareTextMesh({
     text, size, strokeWidth=3,
     strokeColor='black', fontSize=`${size*.4}px`,
     fillColor=null,
-    fontFamily='Quicksand'
+    fontFamily='Quicksand',
+    fontWeight='700',
+    bgColor=null,
+}) {
+    return getTextMesh({
+        text,
+        width: size, height: size,
+        strokeWidth, strokeColor, fontSize,
+        fillColor, fontFamily, fontWeight,
+        bgColor,
+    });
+};
+
+export function getTextMesh({
+    text, width=null, height, strokeWidth=3,
+    strokeColor='black', fontSize=`${height*.4}px`,
+    fillColor=null,
+    fontFamily='Quicksand',
+    fontWeight='500',
+    bgColor=null,
 }) {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
 
-    const scale = window.devicePixelRatio;
-    canvas.width = Math.floor(size * scale);
-    canvas.height = Math.floor(size * scale);
-    ctx.scale(scale, scale);
+    const font = `${fontWeight} ${fontSize} ${fontFamily}`;
 
-    if (fillColor !== null) {
-        ctx.fillStyle = fillColor;
-        ctx.fillRect(0, 0, size, size);
+    if (width === null) {
+        ctx.font = font;
+        const textMetrics = ctx.measureText(text);
+        width = textMetrics.width;
     }
-    ctx.font = `${fontSize} ${fontFamily}`;
+
+    const scale = window.devicePixelRatio;
+    ctx.scale(scale, scale);
+    canvas.width = Math.floor(width * scale);
+    canvas.height = Math.floor(height * scale);
+
+    ctx.font = font;
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
+
+    if (bgColor !== null) {
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(0, 0, width, height);
+    }
+    if (fillColor !== null) {
+        ctx.fillStyle = fillColor;
+        ctx.fillRect(0, 0, width, height);
+    }
     ctx.fillStyle = strokeColor;
-    ctx.fillText(text, size / 2, size / 2)
+    ctx.fillText(text, width / 2, height / 2)
     if (strokeWidth > 0) {
         ctx.lineWidth = strokeWidth;
         ctx.strokeStyle = strokeColor;
-        ctx.strokeRect(0, 0, size, size)
+        ctx.strokeRect(0, 0, width, height)
     }
 
     const texture = new THREE.CanvasTexture(canvas);
@@ -125,8 +157,8 @@ export function getSquareTextMesh({
         transparent: true,
         side: THREE.DoubleSide,
     })
-    const geometry = new THREE.PlaneGeometry(size, size);
-    geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(size/2, -size/2, 0));
+    const geometry = new THREE.PlaneGeometry(width, height);
+    geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(width/2, -height/2, 0));
     var mesh = new THREE.Mesh(geometry, material)
     return mesh
 }
@@ -139,6 +171,7 @@ export function getColoredNumberTable({
     precision=2,
     strokeColor='black',
     fontSize=`${cellSize*.4}px`,
+    bgColor='white',
 }) {
     return getTable({
         cells: numbers,
@@ -147,7 +180,7 @@ export function getColoredNumberTable({
             const x = cell.toFixed(precision)
             return getSquareTextMesh({
                 text: `${x}`, size: cellSize, strokeWidth, strokeColor,
-                fontSize, fillColor,
+                fontSize, fillColor, bgColor
             });
         },
         cellSize, cellMarginX, cellMarginY
@@ -163,6 +196,7 @@ export function getMultiChannelColoredNumberTable({
     precision=2,
     strokeColor='black',
     fontSize=`${cellSize*.4}px`,
+    bgColor='white',
 }) {
     const rgbTableGroup = new THREE.Group();
     const channelTables = numbers.map((channel, i) => {
@@ -173,7 +207,7 @@ export function getMultiChannelColoredNumberTable({
                 const x = cell.toFixed(precision)
                 return getSquareTextMesh({
                     text: `${x}`, size: cellSize, strokeWidth, strokeColor,
-                    fontSize, fillColor,
+                    fontSize, fillColor, bgColor
                 });
             },
             cellSize, cellMarginX, cellMarginY

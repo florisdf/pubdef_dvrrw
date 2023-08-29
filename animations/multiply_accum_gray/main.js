@@ -1,5 +1,4 @@
 import {
-    getObjectCenter, getObjectSize,
     idxToNumber,
 } from '../image_palette/image_palette.js';
 import ghostIdxsGray from './ghost_gray.js';
@@ -8,11 +7,7 @@ import ghostIdxsGreen from './cyan_ghost_green.js';
 import ghostIdxsBlue from './cyan_ghost_blue.js';
 import pacmanIdxsGray from './pacman_gray.js';
 
-import {
-    getSquareTextMesh, getColoredNumberTable, getColorTable,
-    getMultiChannelColoredNumberTable
-} from './pixel_tables.js';
-import { OperandBox } from './operand_box.js';
+import { Neuron } from './neuron.js';
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -20,66 +15,12 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 const KUL_RGB = '0,64,122'
 
 
-function elWiseProduct(inputNumbers, weightNumbers) {
-    return inputNumbers.map((row, i) => row.map((number, j) => number * weightNumbers[i][j]));
-}
-
-
 function getAnimationTimeline({
-    inputGroup,
-    inputColorGroup,
-    weightGroup,
-    productGroup,
-    opBoxTimes, opBoxEq, opBoxSum,
-    macMesh, opShift
+    neuron, scene
 }) {
-    // Put in initial positions
-    const tableSize = getObjectSize(inputGroup);
-    const cellSize = getObjectSize(inputGroup.children[0].children[0]);
-
-    const midChannel = Math.floor(inputGroup.children.length / 2);
-    inputColorGroup.position.x = inputGroup.children[midChannel].position.x
-
-    weightGroup.position.z = opShift;
-
-    productGroup.position.z = 2*opShift;
-
-    opBoxTimes.forEach((box, i) => {
-        box.group.position.x = inputGroup.children[i].position.x;
-    });
-    opBoxEq.forEach((box, i) => {
-        box.group.position.x = weightGroup.children[i].position.x;
-        box.group.position.z = weightGroup.position.z;
-    });
-
-    opBoxSum.group.position.z = productGroup.position.z;
-
-    const macMeshSize = new THREE.Box3().setFromObject(macMesh).getSize(new THREE.Vector3())
-    macMesh.position.x = (opBoxSum.startWidth - macMeshSize.x)/2;
-    macMesh.position.y = (- opBoxSum.startHeight + macMeshSize.y)/2;
-    macMesh.position.z = opBoxSum.group.position.z + opBoxSum.depth;
-
-    const gridHelper = new THREE.GridHelper(1000, 10);
-    const axesHelper = new THREE.AxesHelper(2000);
-
-    // Create scene
-    const scene = new THREE.Scene();
-
-    scene.add(inputGroup);
-    scene.add(inputColorGroup);
-
-    scene.add(weightGroup);
-
-    scene.add(productGroup);
-
-    opBoxTimes.forEach(box => scene.add(box.group));
-    opBoxEq.forEach(box => scene.add(box.group));
-    scene.add(opBoxSum.group);
-
-    scene.add(macMesh);
-
-    scene.add(gridHelper);
-    scene.add(axesHelper);
+    const inputGroup = neuron.group.getObjectByName('input');
+    const productGroup = neuron.group.getObjectByName('productResult');
+    const tableSize = new THREE.Box3().setFromObject(inputGroup).getSize(new THREE.Vector3());
 
     // Create camera
     const canvasWidth = window.innerWidth;
@@ -102,10 +43,20 @@ function getAnimationTimeline({
     container.appendChild(renderEl);
     renderer.setSize(canvasWidth, canvasHeight);
 
-    // const controls = new OrbitControls(camera, renderEl);
+    const controls = new OrbitControls(camera, renderEl);
 
     function render() {
-        // [opBoxTimes, opBoxEq, opBoxSum].forEach(b => b.operand.lookAt(camera.position))
+        const productBoxes = _.range(neuron.numChannels).map(
+            i => neuron.group.getObjectByName(`productBox${i}`)
+        )
+        const eqBoxes = _.range(neuron.numChannels).map(
+            i => neuron.group.getObjectByName(`eqBox${i}`)
+        )
+        const sumBox = neuron.group.getObjectByName('sumBox');
+        const actBox = neuron.group.getObjectByName('activationBox');
+        [...productBoxes, ...eqBoxes, sumBox, actBox].forEach(
+            b => b.getObjectByName('operand').lookAt(camera.position)
+        )
         renderer.render(scene, camera); 
     }
 
@@ -119,7 +70,7 @@ function getAnimationTimeline({
     const tl = gsap.timeline({
         delay: 2,
         onUpdate: render,
-        // onComplete: animateControl,
+        onComplete: animateControl,
         defaults: {
             ease: "power2.inOut" 
         },
@@ -203,120 +154,19 @@ function getNumDims(arr) {
     }
 }
 
-function getGhostSceneComps(inputNumbers, weightNumbers) {
-    const cellSize = 100;
-    const strokeWidth = cellSize / 100;
-    const numChannels = inputNumbers.length;
+function getGhostSceneComps(input, weights) {
+    // Create scene
+    const scene = new THREE.Scene();
 
-    const fillOpacity = 0.05;
-    const numberToColor = (x, channel) => {
-        if (numChannels === 1) {
-            x = Math.round(x * 30 + 70);
-            return `hsl(0, 0%, ${x}%)`;
-        } else if (numChannels === 3) {
-            x = Math.round(x * 255);
-            // const hue = [0, 120, 240][channel];
-            // return `hsla(${hue}, ${x}%, 50%, 0.5)`;
+    const neuron = new Neuron({input, weights, bias: 10});
+    scene.add(neuron.group);
 
-            const channels = [0, 0, 0];
-            channels[channel] = x;
-            return `rgba(${channels.join(',')}, 0.1)`;
-        }
-    };
+    const gridHelper = new THREE.GridHelper(1000, 10);
+    const axesHelper = new THREE.AxesHelper(2000);
+    scene.add(gridHelper);
+    scene.add(axesHelper);
 
-    const inputGroup = getMultiChannelColoredNumberTable({
-        numbers: inputNumbers,
-        numberToColor,
-        cellSize,
-        strokeWidth,
-    });
-    const inputColorGroup = getColorTable({
-        colors: inputNumbers[0].map((row, i) => row.map((x, j) => {
-                if (numChannels === 1) {
-                    x = Math.round(x*255);
-                    return `rgb(${x}, ${x}, ${x})`;
-                } else if (numChannels === 3) {
-                    const r = Math.round(x*255);
-                    const g = Math.round(inputNumbers[1][i][j] * 255);
-                    const b = Math.round(inputNumbers[2][i][j] * 255);
-                    return `rgb(${r}, ${g}, ${b})`;
-                }
-            })),
-        cellSize,
-    });
-
-    const weightGroup = getMultiChannelColoredNumberTable({
-        numbers: weightNumbers,
-        numberToColor,
-        cellSize,
-        strokeWidth,
-    });
-
-    const productNumbers = inputNumbers.map((ch, i) => elWiseProduct(ch, weightNumbers[i]));
-    const productGroup = getMultiChannelColoredNumberTable({
-        numbers: productNumbers,
-        numberToColor,
-        cellSize,
-        strokeWidth,
-    });
-    productGroup.children.forEach(group => {
-        group.children.forEach(m => {
-            m.material.depthWrite = false;
-        });
-    });
-
-    const opShift = 1500;
-    const opBoxTimes = _.range(numChannels).map(
-        () => new OperandBox({
-            color: 'darkblue',
-            opacity: 0.1,
-            depth: opShift,
-            startHeight: cellSize,
-            opChar: "×",
-            opSize: cellSize,
-        })
-    );
-    const opBoxEq = _.range(numChannels).map(
-        () => new OperandBox({
-            color: 'darkblue',
-            opacity: 0.1,
-            depth: opShift,
-            startHeight: cellSize,
-            opChar: "=",
-            opSize: cellSize,
-        })
-    );
-    const tableSize = new THREE.Box3().setFromObject(inputGroup).getSize(new THREE.Vector3())
-    const opBoxSum = new OperandBox({
-        color: 'darkgreen',
-        opacity: 0.05,
-        depth: opShift/2,
-        startWidth: tableSize.x,
-        startHeight: tableSize.y,
-        endHeight: cellSize,
-        opChar: "+",
-        opSize: (tableSize.y + cellSize)/2,
-    });
-    const opBoxActiv = new OperandBox({
-        color: 'darkred',
-        opacity: 0.1,
-        depth: opShift,
-        startHeight: cellSize,
-        opChar: ">",
-        opSize: cellSize,
-    });
-
-    const macResult = (productNumbers.flat().flat().reduce((acc, curr) => acc + curr, 0)).toFixed(1);
-    const macMesh = getSquareTextMesh({text: macResult, size: cellSize, fillColor: 'white'});
-
-    return {
-        inputGroup,
-        inputColorGroup,
-        weightGroup,
-        productGroup,
-        opBoxTimes, opBoxEq, opBoxSum,
-        macMesh, opShift
-    };
+    return { neuron, scene };
 }
 
 
@@ -333,6 +183,8 @@ function main() {
 
     const inputNumbers = [ghostNumbersGray];
     const weightNumbers = [ghostNumbersGray];
+    // const inputNumbers = ghostNumbersRGB;
+    // const weightNumbers = ghostNumbersRGB;
 
     const tl = getAnimationTimeline(getGhostSceneComps(inputNumbers, weightNumbers));
     tl.play();
