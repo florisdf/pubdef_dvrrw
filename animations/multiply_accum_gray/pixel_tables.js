@@ -68,10 +68,8 @@ export function getTextMesh({
         width = textMetrics.width;
     }
 
-    const scale = window.devicePixelRatio;
-    ctx.scale(scale, scale);
-    canvas.width = Math.floor(width * scale);
-    canvas.height = Math.floor(height * scale);
+    canvas.width = width;
+    canvas.height = height;
 
     ctx.font = font;
     ctx.textAlign = 'center'
