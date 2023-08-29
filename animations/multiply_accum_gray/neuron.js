@@ -11,27 +11,66 @@ export class Neuron {
     #weights;
     #bias;
     #group;
+    #color;
+    #actFunc;
+    #actFuncToStr;
+    #productBoxes;
+    #equalsBoxes;
+    #sumBox;
+    #activationBox;
     constructor({
-        input, weights, bias
+        input, weights, bias, color = 'rgb(0,64,122)',
+        actFunc = (out, bias) => out > bias ? 1.0 : 0.0,
+        actFuncToStr = (bias) => `> ${bias} ?`
     }) {
         this.#input = input;
         this.#weights = weights;
         this.#bias = bias;
         this.#group = new THREE.Group();
+        this.#color = color;
+        this.#actFunc = actFunc;
+        this.#actFuncToStr = actFuncToStr;
 
         this.update();
     }
+
     update() {
-        createNeuron({
+        const {
+            productBoxes,
+            equalsBoxes,
+            sumBox,
+            activationBox,
+        } = createNeuron({
             input: this.#input,
             weights: this.#weights,
             bias: this.#bias,
-            group: this.#group
-        })
+            group: this.#group,
+            color: this.#color,
+            actFunc: this.#actFunc,
+            actFuncToStr: this.#actFuncToStr,
+        });
+        this.#productBoxes = productBoxes;
+        this.#equalsBoxes = equalsBoxes;
+        this.#sumBox = sumBox;
+        this.#activationBox = activationBox;
     }
+
     get group() {
         return this.#group;
     }
+    get productBoxes() {
+        return this.#productBoxes
+    }
+    get equalsBoxes() {
+        return this.#equalsBoxes
+    }
+    get sumBox() {
+        return this.#sumBox
+    }
+    get activationBox() {
+        return this.#activationBox
+    }
+
     get input() {
         return this.#input;
     }
@@ -39,6 +78,7 @@ export class Neuron {
         this.#input = input;
         this.update();
     }
+
     get weights() {
         return this.#weights;
     }
@@ -46,6 +86,7 @@ export class Neuron {
         this.#weights = weights;
         this.update();
     }
+
     get bias() {
         return this.#bias;
     }
@@ -53,12 +94,26 @@ export class Neuron {
         this.#bias = bias;
         this.update();
     }
+
     get numChannels() {
         return this.#input.length;
     }
+
+    get color() {
+        return this.#color;
+    }
+    set color(color) {
+        this.#color = color;
+        this.update()
+    }
 }
 
-function createNeuron({input, weights, bias, group}) {
+function createNeuron({
+    input, weights, bias, group,
+    color,
+    prodBoxHeight,
+    actFunc, actFuncToStr
+}) {
     const cellSize = 100;
     const strokeWidth = cellSize / 100;
     const numChannels = input.length;
@@ -126,14 +181,15 @@ function createNeuron({input, weights, bias, group}) {
     productGroup.name = "productResult";
     group.add(productGroup);
 
+    const tableSize = new THREE.Box3().setFromObject(inputGroup).getSize(new THREE.Vector3())
+
     const productBoxes = _.range(numChannels).map(
         () => new OperandBox({
-            color: 'darkblue',
+            color: color,
             opacity: 0.1,
             depth: opShift,
-            startHeight: cellSize,
+            startHeight: tableSize.y,
             opChar: "×",
-            opSize: cellSize,
         })
     );
     productBoxes.forEach((box, i) => {
@@ -145,12 +201,11 @@ function createNeuron({input, weights, bias, group}) {
 
     const equalsBoxes = _.range(numChannels).map(
         () => new OperandBox({
-            color: 'darkblue',
+            color: color,
             opacity: 0.1,
             depth: opShift,
-            startHeight: cellSize,
+            startHeight: tableSize.y,
             opChar: "=",
-            opSize: cellSize,
         })
     );
     equalsBoxes.forEach((box, i) => {
@@ -161,16 +216,14 @@ function createNeuron({input, weights, bias, group}) {
     });
     equalsBoxes.forEach(box => group.add(box.group));
 
-    const tableSize = new THREE.Box3().setFromObject(inputGroup).getSize(new THREE.Vector3())
     const sumBox = new OperandBox({
-        color: 'darkblue',
+        color: color,
         opacity: 0.05,
         depth: opShift,
         startWidth: tableSize.x,
         startHeight: tableSize.y,
         endHeight: cellSize,
         opChar: "+",
-        opSize: (tableSize.y + cellSize)/2,
     });
     sumBox.group.position.z = productGroup.position.z;
     sumBox.frustum.renderOrder = 3;
@@ -187,12 +240,11 @@ function createNeuron({input, weights, bias, group}) {
     group.add(sumMesh);
 
     const activationBox = new OperandBox({
-        color: 'darkblue',
+        color: color,
         opacity: 0.1,
         depth: opShift,
         startHeight: cellSize,
-        opChar: `> ${bias} ?`,
-        opSize: cellSize,
+        opChar: actFuncToStr(bias),
     });
     activationBox.group.position.x = sumMesh.position.x;
     activationBox.group.position.y = sumMesh.position.y;
@@ -200,7 +252,29 @@ function createNeuron({input, weights, bias, group}) {
     activationBox.group.name = 'activationBox';
     group.add(activationBox.group);
 
-    return group;
+    const output = actFunc(macResult, bias).toFixed(2);
+    const invOut = 1 - output;
+    const uInt = x => Math.round(x * 255);
+    const outputMesh = getSquareTextMesh({
+        text: output, size: cellSize,
+        fillColor: `rgb(${uInt(output)},${uInt(output)},${uInt(output)})`,
+        fontColor: `rgb(${uInt(invOut)},${uInt(invOut)},${uInt(invOut)})`,
+    });
+    const actBoxSize = new THREE.Box3().setFromObject(activationBox.group).getSize(new THREE.Vector3());
+    outputMesh.position.x = activationBox.group.position.x;
+    outputMesh.position.y = activationBox.group.position.y;
+    outputMesh.position.z = activationBox.group.position.z + actBoxSize.z;
+    outputMesh.renderOrder = 5;
+    outputMesh.name = 'output';
+    group.add(outputMesh);
+
+    return {
+        neuronGroup: group,
+        productBoxes,
+        equalsBoxes,
+        sumBox,
+        activationBox,
+    };
 }
 
 

@@ -91,15 +91,15 @@ export function getColorTable({
 export function getSquareTextMesh({
     text, size, strokeWidth=3,
     strokeColor='black', fontSize=`${size*.4}px`,
-    fillColor=null,
+    fontColor='black', fillColor=null,
     fontFamily='Quicksand',
-    fontWeight='700',
+    fontWeight='500',
     bgColor=null,
 }) {
     return getTextMesh({
         text,
         width: size, height: size,
-        strokeWidth, strokeColor, fontSize,
+        strokeWidth, strokeColor, fontSize, fontColor,
         fillColor, fontFamily, fontWeight,
         bgColor,
     });
@@ -107,7 +107,8 @@ export function getSquareTextMesh({
 
 export function getTextMesh({
     text, width=null, height, strokeWidth=3,
-    strokeColor='black', fontSize=`${height*.4}px`,
+    strokeColor='black', fontColor='black',
+    fontSize=`${height*.4}px`,
     fillColor=null,
     fontFamily='Quicksand',
     fontWeight='500',
@@ -141,7 +142,7 @@ export function getTextMesh({
         ctx.fillStyle = fillColor;
         ctx.fillRect(0, 0, width, height);
     }
-    ctx.fillStyle = strokeColor;
+    ctx.fillStyle = fontColor;
     ctx.fillText(text, width / 2, height / 2)
     if (strokeWidth > 0) {
         ctx.lineWidth = strokeWidth;
@@ -152,14 +153,14 @@ export function getTextMesh({
     const texture = new THREE.CanvasTexture(canvas);
     texture.needsUpdate = true
 
-    var material = new THREE.MeshBasicMaterial({
+    const material = new THREE.MeshBasicMaterial({
         map: texture,
         transparent: true,
         side: THREE.DoubleSide,
     })
     const geometry = new THREE.PlaneGeometry(width, height);
     geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(width/2, -height/2, 0));
-    var mesh = new THREE.Mesh(geometry, material)
+    const mesh = new THREE.Mesh(geometry, material)
     return mesh
 }
 
@@ -169,6 +170,7 @@ export function getColoredNumberTable({
     cellMarginX=0,
     cellMarginY=cellMarginX,
     precision=2,
+    fontColor='black',
     strokeColor='black',
     fontSize=`${cellSize*.4}px`,
     bgColor='white',
@@ -180,7 +182,7 @@ export function getColoredNumberTable({
             const x = cell.toFixed(precision)
             return getSquareTextMesh({
                 text: `${x}`, size: cellSize, strokeWidth, strokeColor,
-                fontSize, fillColor, bgColor
+                fontColor, fontSize, fillColor, bgColor
             });
         },
         cellSize, cellMarginX, cellMarginY
@@ -194,6 +196,7 @@ export function getMultiChannelColoredNumberTable({
     cellMarginY=cellMarginX,
     channelMargin=100,
     precision=2,
+    fontColor='black',
     strokeColor='black',
     fontSize=`${cellSize*.4}px`,
     bgColor='white',
@@ -207,7 +210,7 @@ export function getMultiChannelColoredNumberTable({
                 const x = cell.toFixed(precision)
                 return getSquareTextMesh({
                     text: `${x}`, size: cellSize, strokeWidth, strokeColor,
-                    fontSize, fillColor, bgColor
+                    fontSize, fontColor, fillColor, bgColor
                 });
             },
             cellSize, cellMarginX, cellMarginY

@@ -11,7 +11,6 @@ export class OperandBox {
     #opacity;
     #color;
     #opChar;
-    #opSize;
     constructor({
         color,
         opacity,
@@ -21,7 +20,6 @@ export class OperandBox {
         endHeight = startHeight,
         endWidth = endHeight,
         opChar,
-        opSize = height * 2/3,
     }) {
         this.#depth = depth;
         this.#startHeight = startHeight;
@@ -31,7 +29,6 @@ export class OperandBox {
         this.#opacity = opacity;
         this.#color = color;
         this.#opChar = opChar;
-        this.#opSize = opSize;
         this.group = new THREE.Group();
         this.update();
     }
@@ -57,10 +54,6 @@ export class OperandBox {
 
         // Define indices for the faces
         const indices = [
-            0, 1, 2,  // back
-            1, 3, 2,
-            4, 5, 6,  // front
-            5, 7, 6,
             0, 4, 1,  // top
             4, 5, 1,
             2, 3, 6,  // bottom
@@ -96,10 +89,11 @@ export class OperandBox {
         frustumGroup.name = 'frustum';
         this.frustum = frustumGroup;
 
+        const opSize = this.#startHeight * 2/3;
         const operandMesh = getTextMesh({
             text: this.#opChar,
-            height: this.#opSize*3/2, strokeWidth: 0,
-            strokeColor: this.#color, fontSize: `${this.#opSize}px`,
+            height: opSize*3/2, strokeWidth: 0,
+            fontColor: this.#color, fontSize: `${opSize}px`,
         });
         const opMeshSize = new THREE.Box3().setFromObject(operandMesh).getSize(new THREE.Vector3());
         operandMesh.geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(-opMeshSize.x/2, opMeshSize.y/2, 0));
@@ -147,13 +141,6 @@ export class OperandBox {
     }
     set startWidth(startWidth) {
         this.#startWidth = startWidth;
-        this.update();
-    }
-    get opSize() {
-        return this.#opSize;
-    }
-    set opSize(opSize) {
-        this.#opSize = opSize;
         this.update();
     }
 }

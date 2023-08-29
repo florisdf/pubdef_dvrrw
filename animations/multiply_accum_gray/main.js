@@ -12,8 +12,6 @@ import { Neuron } from './neuron.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const KUL_RGB = '0,64,122'
-
 
 function getAnimationTimeline({
     neuron, scene
@@ -21,6 +19,15 @@ function getAnimationTimeline({
     const inputGroup = neuron.group.getObjectByName('input');
     const productGroup = neuron.group.getObjectByName('productResult');
     const tableSize = new THREE.Box3().setFromObject(inputGroup).getSize(new THREE.Vector3());
+    const cellSize = new THREE.Box3().setFromObject(inputGroup.children[0].children[0]).getSize(new THREE.Vector3());
+
+    [...neuron.productBoxes, ...neuron.equalsBoxes].forEach(box => {
+        box.startWidth = cellSize.x;
+        box.startHeight = cellSize.x;
+        box.endWidth = cellSize.x;
+        box.endHeight = cellSize.x;
+        console.log(box)
+    });
 
     // Create camera
     const canvasWidth = window.innerWidth;
@@ -158,7 +165,7 @@ function getGhostSceneComps(input, weights) {
     // Create scene
     const scene = new THREE.Scene();
 
-    const neuron = new Neuron({input, weights, bias: 10});
+    const neuron = new Neuron({input, weights, bias: 50});
     scene.add(neuron.group);
 
     const gridHelper = new THREE.GridHelper(1000, 10);
