@@ -8,6 +8,7 @@ import ghostIdxsBlue from './cyan_ghost_blue.js';
 import pacmanIdxsGray from './pacman_gray.js';
 
 import { Neuron } from './neuron.js';
+import { getColorTable } from './pixel_tables.js';
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -26,7 +27,6 @@ function getAnimationTimeline({
         box.startHeight = cellSize.x;
         box.endWidth = cellSize.x;
         box.endHeight = cellSize.x;
-        console.log(box)
     });
 
     // Create camera
@@ -168,6 +168,27 @@ function getGhostSceneComps(input, weights) {
     const neuron = new Neuron({input, weights, bias: 50});
     scene.add(neuron.group);
 
+    const inputImageGroup = getColorTable({
+        colors: input[0].map((row, i) => row.map((x, j) => {
+                if (neuron.numChannels === 1) {
+                    x = Math.round(x*255);
+                    return `rgb(${x}, ${x}, ${x})`;
+                } else if (neuron.numChannels === 3) {
+                    const r = Math.round(x*255);
+                    const g = Math.round(input[1][i][j] * 255);
+                    const b = Math.round(input[2][i][j] * 255);
+                    return `rgb(${r}, ${g}, ${b})`;
+                }
+            })),
+        cellSize: neuron.cellSize,
+    });
+    const midChannel = Math.floor(neuron.numChannels / 2);
+    const inputGroup = neuron.group.getObjectByName('input');
+    inputImageGroup.position.x = inputGroup.children[midChannel].position.x
+    inputImageGroup.name = "inputImage";
+    scene.add(inputImageGroup);
+
+
     const gridHelper = new THREE.GridHelper(1000, 10);
     const axesHelper = new THREE.AxesHelper(2000);
     scene.add(gridHelper);
@@ -188,10 +209,10 @@ function main() {
     const ghostNumbersBlue = idxToNumber(ghostIdxsBlue, palette);
     const ghostNumbersRGB = [ghostNumbersRed, ghostNumbersGreen, ghostNumbersBlue];
 
-    const inputNumbers = [ghostNumbersGray];
-    const weightNumbers = [ghostNumbersGray];
-    // const inputNumbers = ghostNumbersRGB;
-    // const weightNumbers = ghostNumbersRGB;
+    // const inputNumbers = [ghostNumbersGray];
+    // const weightNumbers = [ghostNumbersGray];
+    const inputNumbers = ghostNumbersRGB;
+    const weightNumbers = ghostNumbersRGB;
 
     const tl = getAnimationTimeline(getGhostSceneComps(inputNumbers, weightNumbers));
     tl.play();

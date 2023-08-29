@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import {
-    getSquareTextMesh, getColorTable,
-    getMultiChannelColoredNumberTable
+    getSquareTextMesh, getMultiChannelColoredNumberTable
 } from './pixel_tables.js';
 import { OperandBox } from './operand_box.js';
 
@@ -18,10 +17,12 @@ export class Neuron {
     #equalsBoxes;
     #sumBox;
     #activationBox;
+    #cellSize;
     constructor({
         input, weights, bias, color = 'rgb(0,64,122)',
         actFunc = (out, bias) => out > bias ? 1.0 : 0.0,
-        actFuncToStr = (bias) => `> ${bias} ?`
+        actFuncToStr = (bias) => `> ${bias} ?`,
+        cellSize = 100,
     }) {
         this.#input = input;
         this.#weights = weights;
@@ -30,6 +31,7 @@ export class Neuron {
         this.#color = color;
         this.#actFunc = actFunc;
         this.#actFuncToStr = actFuncToStr;
+        this.#cellSize = cellSize;
 
         this.update();
     }
@@ -48,6 +50,7 @@ export class Neuron {
             color: this.#color,
             actFunc: this.#actFunc,
             actFuncToStr: this.#actFuncToStr,
+            cellSize: this.#cellSize,
         });
         this.#productBoxes = productBoxes;
         this.#equalsBoxes = equalsBoxes;
@@ -106,15 +109,23 @@ export class Neuron {
         this.#color = color;
         this.update()
     }
+
+    get cellSize() {
+        return this.#cellSize;
+    }
+    set cellSize(cellSize) {
+        this.#cellSize = cellSize;
+        this.update();
+    }
 }
 
 function createNeuron({
     input, weights, bias, group,
     color,
     prodBoxHeight,
-    actFunc, actFuncToStr
+    actFunc, actFuncToStr,
+    cellSize,
 }) {
-    const cellSize = 100;
     const strokeWidth = cellSize / 100;
     const numChannels = input.length;
     const opShift = 500;
@@ -140,25 +151,6 @@ function createNeuron({
     });
     inputGroup.name = "input";
     group.add(inputGroup);
-
-    const inputImageGroup = getColorTable({
-        colors: input[0].map((row, i) => row.map((x, j) => {
-                if (numChannels === 1) {
-                    x = Math.round(x*255);
-                    return `rgb(${x}, ${x}, ${x})`;
-                } else if (numChannels === 3) {
-                    const r = Math.round(x*255);
-                    const g = Math.round(input[1][i][j] * 255);
-                    const b = Math.round(input[2][i][j] * 255);
-                    return `rgb(${r}, ${g}, ${b})`;
-                }
-            })),
-        cellSize,
-    });
-    const midChannel = Math.floor(inputGroup.children.length / 2);
-    inputImageGroup.position.x = inputGroup.children[midChannel].position.x
-    inputImageGroup.name = "inputImage";
-    group.add(inputImageGroup);
 
     const weightsGroup = getMultiChannelColoredNumberTable({
         numbers: weights,
