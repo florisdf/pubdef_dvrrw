@@ -103,8 +103,8 @@ export function getTextMesh({
     })
     const geometry = new THREE.PlaneGeometry(width, height);
     geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(width/2, -height/2, 0));
-    const coloredMesh = new THREE.Mesh(geometry, material)
-    coloredMesh.renderOrder = 1;
+    const textMesh = new THREE.Mesh(geometry, material)
+    textMesh.name = 'textMesh';
 
     const group = new THREE.Group();
 
@@ -114,10 +114,9 @@ export function getTextMesh({
             side: THREE.DoubleSide,
         });
         const blackMesh = new THREE.Mesh(geometry, blackMaterial)
-        blackMesh.renderOrder = 0;
         group.add(blackMesh);
     }
-    group.add(coloredMesh);
+    group.add(textMesh);
 
     return group;
 }
