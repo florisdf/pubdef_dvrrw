@@ -21,6 +21,11 @@ export class Neuron {
     #numberOpacity;
     #colorOpacity;
     #channelMargin;
+    #inputGroup;
+    #weightsGroup;
+    #productGroup;
+    #sumMesh;
+    #outputMesh;
     constructor({
         input, weights, bias, color = 'rgb(0,64,122)',
         actFunc = (out, bias) => out > bias ? 1.0 : 0.0,
@@ -45,11 +50,17 @@ export class Neuron {
 
     update() {
         this.group.clear();
+
         const {
+            inputGroup,
             productBoxes,
+            weightsGroup,
             equalsBoxes,
+            productGroup,
             sumBox,
+            sumMesh,
             activationBox,
+            outputMesh,
         } = createNeuron({
             input: this.#input,
             weights: this.#weights,
@@ -68,39 +79,12 @@ export class Neuron {
         this.#equalsBoxes = equalsBoxes;
         this.#sumBox = sumBox;
         this.#activationBox = activationBox;
-    }
 
-    layeredRender(renderer, camera) {
-        this.update();
-
-        const inputScene = new THREE.Scene();
-        inputScene.add(this.group.getObjectByName('input'));
-        renderer.autoClear = true;
-        renderer.render(inputScene, camera)
-        renderer.autoClear = false;
-
-        const productScene = new THREE.Scene();
-        this.productBoxes.forEach(box => productScene.add(box.group));
-        renderer.render(productScene, camera)
-
-        const weightsScene = new THREE.Scene();
-        weightsScene.add(this.group.getObjectByName('weights'));
-        renderer.render(weightsScene, camera);
-
-        const equalsScene = new THREE.Scene();
-        this.equalsBoxes.forEach(box => equalsScene.add(box.group));
-        renderer.render(equalsScene, camera)
-
-        const productResultScene = new THREE.Scene();
-        productResultScene.add(this.group.getObjectByName('productResult'))
-        renderer.render(productResultScene, camera)
-
-        const outputScene = new THREE.Scene();
-        outputScene.add(this.sumBox.group);
-        outputScene.add(this.group.getObjectByName('sum'));
-        outputScene.add(this.actBox.group);
-        outputScene.add(this.group.getObjectByName('output'));
-        renderer.render(outputScene, camera)
+        this.#inputGroup = inputGroup;
+        this.#weightsGroup = weightsGroup;
+        this.#productGroup = productGroup;
+        this.#sumMesh = sumMesh;
+        this.#outputMesh = outputMesh;
     }
 
     get group() {
@@ -117,6 +101,21 @@ export class Neuron {
     }
     get activationBox() {
         return this.#activationBox
+    }
+    get inputGroup() {
+        return this.#inputGroup;
+    }
+    get weightsGroup() {
+        return this.#weightsGroup;
+    }
+    get productGroup() {
+        return this.#productGroup;
+    }
+    get sumMesh() {
+        return this.#sumMesh;
+    }
+    get outputMesh() {
+        return this.#outputMesh;
     }
 
     get input() {
@@ -306,7 +305,6 @@ function createNeuron({
     const macResult = (productNumbers.flat().flat().reduce((acc, curr) => acc + curr, 0)).toFixed(1);
     const sumMesh = getSquareTextMesh({
         text: macResult, size: cellSize, fillColor: 'white',
-        fontColor: fontColor,
     });
     const macMeshSize = new THREE.Box3().setFromObject(sumMesh).getSize(new THREE.Vector3())
     sumMesh.position.x = (sumBox.startWidth - macMeshSize.x)/2;
@@ -346,10 +344,15 @@ function createNeuron({
 
     return {
         neuronGroup: group,
+        inputGroup,
         productBoxes,
+        weightsGroup,
         equalsBoxes,
+        productGroup,
         sumBox,
+        sumMesh,
         activationBox,
+        outputMesh,
     };
 }
 
