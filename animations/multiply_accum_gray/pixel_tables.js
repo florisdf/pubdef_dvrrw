@@ -123,31 +123,6 @@ export function getTextMesh({
 }
 
 
-export function getColoredNumberTable({
-    numbers, numberToColor, cellSize, strokeWidth,
-    cellMarginX=0,
-    cellMarginY=cellMarginX,
-    precision=2,
-    fontColor='black',
-    strokeColor='black',
-    fontSize=`${cellSize*.4}px`,
-    bgColor='white',
-}) {
-    return getTable({
-        cells: numbers,
-        cellToMesh: cell => {
-            const fillColor = numberToColor(cell);
-            const x = cell.toFixed(precision)
-            return getSquareTextMesh({
-                text: `${x}`, size: cellSize, strokeWidth, strokeColor,
-                fontColor, fontSize, fillColor, bgColor
-            });
-        },
-        cellSize, cellMarginX, cellMarginY
-    });
-}
-
-
 export function getMultiChannelColoredNumberTable({
     numbers, numberToColor, cellSize, strokeWidth,
     cellMarginX=0,
