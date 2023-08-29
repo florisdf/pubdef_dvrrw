@@ -6,6 +6,9 @@ import ghostIdxsRed from './cyan_ghost_red.js';
 import ghostIdxsGreen from './cyan_ghost_green.js';
 import ghostIdxsBlue from './cyan_ghost_blue.js';
 import pacmanIdxsGray from './pacman_gray.js';
+import pacmanIdxsRed from './pacman_red.js';
+import pacmanIdxsGreen from './pacman_green.js';
+import pacmanIdxsBlue from './pacman_blue.js';
 
 import { Neuron } from './neuron.js';
 
@@ -49,7 +52,7 @@ function getAnimationTimeline({
     container.appendChild(renderEl);
     renderer.setSize(canvasWidth, canvasHeight);
 
-    // const controls = new OrbitControls(camera, renderEl);
+    const controls = new OrbitControls(camera, renderEl);
 
     function render() {
         [
@@ -71,18 +74,15 @@ function getAnimationTimeline({
     const tl = gsap.timeline({
         delay: 2,
         onUpdate: render,
-        // onComplete: animateControl,
+        onComplete: animateControl,
         defaults: {
             ease: "power2.inOut" 
         },
     });
 
-    tl.to(neuron, {
-        channelMargin: -tableSize,
-        colorOpacity: 1.0,
-        numberOpacity: 0.0,
-        duration: 2
-    });
+    neuron.channelMargin = -tableSize;
+    neuron.colorOpacity = 1.0;
+    neuron.numberOpacity = 0.0;
 
     return tl;
 }
@@ -123,9 +123,14 @@ function main() {
     const ghostNumbersBlue = idxToNumber(ghostIdxsBlue, palette);
     const ghostNumbersRGB = [ghostNumbersRed, ghostNumbersGreen, ghostNumbersBlue];
 
+    const pacmanNumbersRed = idxToNumber(pacmanIdxsRed, palette);
+    const pacmanNumbersGreen = idxToNumber(pacmanIdxsGreen, palette);
+    const pacmanNumbersBlue = idxToNumber(pacmanIdxsBlue, palette);
+    const pacmanNumbersRGB = [pacmanNumbersRed, pacmanNumbersGreen, pacmanNumbersBlue];
+
     // const inputNumbers = [ghostNumbersGray];
     // const weightNumbers = [ghostNumbersGray];
-    const inputNumbers = ghostNumbersRGB;
+    const inputNumbers = pacmanNumbersRGB;
     const weightNumbers = ghostNumbersRGB;
 
     const tl = getAnimationTimeline(getGhostSceneComps(inputNumbers, weightNumbers));

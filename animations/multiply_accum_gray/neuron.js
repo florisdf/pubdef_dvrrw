@@ -331,7 +331,7 @@ function createNeuron({
     const uInt = x => Math.round(x * 255);
     const outputMesh = getSquareTextMesh({
         text: output, size: cellSize,
-        fillColor: `rgba(${uInt(output)},${uInt(output)},${uInt(output)}, ${numberOpacity})`,
+        fillColor: `rgba(${uInt(output)},${uInt(output)},${uInt(output)})`,
         fontColor: `rgba(${uInt(invOut)},${uInt(invOut)},${uInt(invOut)}, ${numberOpacity})`,
     });
     const actBoxSize = new THREE.Box3().setFromObject(activationBox.group).getSize(new THREE.Vector3());
