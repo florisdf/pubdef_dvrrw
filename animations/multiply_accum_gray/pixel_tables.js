@@ -57,18 +57,36 @@ export function getColorSquare({
         material = new THREE.MeshBasicMaterial({
             map: texture,
             transparent: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
         })
     } else {
         material = new THREE.MeshBasicMaterial({
             color: fillColor,
             transparent: true,
+            blending: THREE.NormalBlending,
+            depthWrite: false,
         })
     }
     const geometry = new THREE.PlaneGeometry(size, size);
     geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(size/2, -size/2, 0));
 
-    const mesh = new THREE.Mesh(geometry, material)
-    return mesh;
+    const coloredMesh = new THREE.Mesh(geometry, material)
+    coloredMesh.renderOrder = 1;
+
+    const blackMaterial = new THREE.MeshBasicMaterial({
+        color: 'black',
+        depthWrite: false,
+        side: THREE.DoubleSide,
+    });
+    const blackMesh = new THREE.Mesh(geometry, blackMaterial)
+    blackMesh.renderOrder = 0;
+
+    const group = new THREE.Group();
+    group.add(blackMesh);
+    group.add(coloredMesh);
+
+    return group;
 }
 
 
@@ -157,11 +175,28 @@ export function getTextMesh({
         map: texture,
         transparent: true,
         side: THREE.DoubleSide,
+        blending: fillColor !== null ? THREE.AdditiveBlending : THREE.NormalBlending,
+        depthWrite: false,
     })
     const geometry = new THREE.PlaneGeometry(width, height);
     geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(width/2, -height/2, 0));
-    const mesh = new THREE.Mesh(geometry, material)
-    return mesh
+    const coloredMesh = new THREE.Mesh(geometry, material)
+    coloredMesh.renderOrder = 1;
+
+    const group = new THREE.Group();
+
+    if (fillColor !== null) {
+        const blackMaterial = new THREE.MeshBasicMaterial({
+            color: 'black',
+            side: THREE.DoubleSide,
+        });
+        const blackMesh = new THREE.Mesh(geometry, blackMaterial)
+        blackMesh.renderOrder = 0;
+        group.add(blackMesh);
+    }
+    group.add(coloredMesh);
+
+    return group;
 }
 
 

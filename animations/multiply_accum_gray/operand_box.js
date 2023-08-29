@@ -103,12 +103,11 @@ export class OperandBox {
             fontColor: this.#color, fontSize: `${opSize}px`,
         });
         const opMeshSize = new THREE.Box3().setFromObject(operandMesh).getSize(new THREE.Vector3());
-        operandMesh.geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(-opMeshSize.x/2, opMeshSize.y/2, 0));
+        operandMesh.children[0].geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(-opMeshSize.x/2, opMeshSize.y/2, 0));
         operandMesh.rotation.y = - Math.PI / 2;
         operandMesh.position.x = this.#startWidth/2;
         operandMesh.position.y = - this.#startHeight/2;
         operandMesh.position.z = this.#depth/2;
-        operandMesh.material.depthWrite = false;
         operandMesh.name = 'operand';
         this.operand = operandMesh;
 

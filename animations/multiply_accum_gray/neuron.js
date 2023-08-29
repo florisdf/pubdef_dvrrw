@@ -18,11 +18,15 @@ export class Neuron {
     #sumBox;
     #activationBox;
     #cellSize;
+    #numberOpacity;
+    #colorOpacity;
+    #channelMargin;
     constructor({
         input, weights, bias, color = 'rgb(0,64,122)',
         actFunc = (out, bias) => out > bias ? 1.0 : 0.0,
         actFuncToStr = (bias) => `> ${bias} ?`,
-        cellSize = 100,
+        cellSize = 100, numberOpacity = 1.0,
+        colorOpacity = 0.1, channelMargin = 100.
     }) {
         this.#input = input;
         this.#weights = weights;
@@ -32,11 +36,15 @@ export class Neuron {
         this.#actFunc = actFunc;
         this.#actFuncToStr = actFuncToStr;
         this.#cellSize = cellSize;
+        this.#numberOpacity = numberOpacity;
+        this.#colorOpacity = colorOpacity;
+        this.#channelMargin = channelMargin;
 
         this.update();
     }
 
     update() {
+        this.group.clear();
         const {
             productBoxes,
             equalsBoxes,
@@ -51,11 +59,48 @@ export class Neuron {
             actFunc: this.#actFunc,
             actFuncToStr: this.#actFuncToStr,
             cellSize: this.#cellSize,
+            numberOpacity: this.#numberOpacity,
+            colorOpacity: this.#colorOpacity,
+            strokeWidth: this.#numberOpacity * 3,
+            channelMargin: this.#channelMargin,
         });
         this.#productBoxes = productBoxes;
         this.#equalsBoxes = equalsBoxes;
         this.#sumBox = sumBox;
         this.#activationBox = activationBox;
+    }
+
+    layeredRender(renderer, camera) {
+        this.update();
+
+        const inputScene = new THREE.Scene();
+        inputScene.add(this.group.getObjectByName('input'));
+        renderer.autoClear = true;
+        renderer.render(inputScene, camera)
+        renderer.autoClear = false;
+
+        const productScene = new THREE.Scene();
+        this.productBoxes.forEach(box => productScene.add(box.group));
+        renderer.render(productScene, camera)
+
+        const weightsScene = new THREE.Scene();
+        weightsScene.add(this.group.getObjectByName('weights'));
+        renderer.render(weightsScene, camera);
+
+        const equalsScene = new THREE.Scene();
+        this.equalsBoxes.forEach(box => equalsScene.add(box.group));
+        renderer.render(equalsScene, camera)
+
+        const productResultScene = new THREE.Scene();
+        productResultScene.add(this.group.getObjectByName('productResult'))
+        renderer.render(productResultScene, camera)
+
+        const outputScene = new THREE.Scene();
+        outputScene.add(this.sumBox.group);
+        outputScene.add(this.group.getObjectByName('sum'));
+        outputScene.add(this.actBox.group);
+        outputScene.add(this.group.getObjectByName('output'));
+        renderer.render(outputScene, camera)
     }
 
     get group() {
@@ -117,6 +162,34 @@ export class Neuron {
         this.#cellSize = cellSize;
         this.update();
     }
+
+    get tableSize() {
+        return this.#input[0].length * this.#cellSize;
+    }
+
+    get numberOpacity() {
+        return this.#numberOpacity;
+    }
+    set numberOpacity(numberOpacity) {
+        this.#numberOpacity = numberOpacity;
+        this.update();
+    }
+
+    get colorOpacity() {
+        return this.#colorOpacity;
+    }
+    set colorOpacity(colorOpacity) {
+        this.#colorOpacity = colorOpacity;
+        this.update();
+    }
+
+    get channelMargin() {
+        return this.#channelMargin;
+    }
+    set channelMargin(channelMargin) {
+        this.#channelMargin = channelMargin;
+        this.update();
+    }
 }
 
 function createNeuron({
@@ -124,9 +197,10 @@ function createNeuron({
     color,
     prodBoxHeight,
     actFunc, actFuncToStr,
-    cellSize,
+    cellSize, numberOpacity, colorOpacity,
+    strokeWidth = cellSize / 100,
+    channelMargin
 }) {
-    const strokeWidth = cellSize / 100;
     const numChannels = input.length;
     const opShift = 500;
 
@@ -140,14 +214,17 @@ function createNeuron({
         } else if (numChannels === 3) {
             rgb[channel] = x;
         }
-        return `rgba(${rgb.join(',')}, 0.3)`;
+        return `rgba(${rgb.join(',')}, ${colorOpacity})`;
     };
+    const fontColor = `rgba(0, 0, 0, ${numberOpacity})`;
 
     const inputGroup = getMultiChannelColoredNumberTable({
         numbers: input,
         numberToColor,
         cellSize,
         strokeWidth,
+        fontColor: fontColor,
+        channelMargin
     });
     inputGroup.name = "input";
     group.add(inputGroup);
@@ -157,6 +234,8 @@ function createNeuron({
         numberToColor,
         cellSize,
         strokeWidth,
+        fontColor: fontColor,
+        channelMargin
     });
     weightsGroup.position.z = opShift;
     weightsGroup.name = "weights"
@@ -168,6 +247,8 @@ function createNeuron({
         numberToColor,
         cellSize,
         strokeWidth,
+        fontColor: fontColor,
+        channelMargin
     });
     productGroup.position.z = 2*opShift;
     productGroup.name = "productResult";
@@ -223,7 +304,10 @@ function createNeuron({
     group.add(sumBox.group);
 
     const macResult = (productNumbers.flat().flat().reduce((acc, curr) => acc + curr, 0)).toFixed(1);
-    const sumMesh = getSquareTextMesh({text: macResult, size: cellSize, fillColor: 'white'});
+    const sumMesh = getSquareTextMesh({
+        text: macResult, size: cellSize, fillColor: 'white',
+        fontColor: fontColor,
+    });
     const macMeshSize = new THREE.Box3().setFromObject(sumMesh).getSize(new THREE.Vector3())
     sumMesh.position.x = (sumBox.startWidth - macMeshSize.x)/2;
     sumMesh.position.y = (- sumBox.startHeight + macMeshSize.y)/2;
@@ -249,8 +333,8 @@ function createNeuron({
     const uInt = x => Math.round(x * 255);
     const outputMesh = getSquareTextMesh({
         text: output, size: cellSize,
-        fillColor: `rgb(${uInt(output)},${uInt(output)},${uInt(output)})`,
-        fontColor: `rgb(${uInt(invOut)},${uInt(invOut)},${uInt(invOut)})`,
+        fillColor: `rgba(${uInt(output)},${uInt(output)},${uInt(output)}, ${numberOpacity})`,
+        fontColor: `rgba(${uInt(invOut)},${uInt(invOut)},${uInt(invOut)}, ${numberOpacity})`,
     });
     const actBoxSize = new THREE.Box3().setFromObject(activationBox.group).getSize(new THREE.Vector3());
     outputMesh.position.x = activationBox.group.position.x;

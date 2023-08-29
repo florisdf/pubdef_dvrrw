@@ -8,7 +8,7 @@ import ghostIdxsBlue from './cyan_ghost_blue.js';
 import pacmanIdxsGray from './pacman_gray.js';
 
 import { Neuron } from './neuron.js';
-import { getColorTable } from './pixel_tables.js';
+import { getColorTable, getColorSquare } from './pixel_tables.js';
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -19,14 +19,17 @@ function getAnimationTimeline({
 }) {
     const inputGroup = neuron.group.getObjectByName('input');
     const productGroup = neuron.group.getObjectByName('productResult');
-    const tableSize = new THREE.Box3().setFromObject(inputGroup).getSize(new THREE.Vector3());
-    const cellSize = new THREE.Box3().setFromObject(inputGroup.children[0].children[0]).getSize(new THREE.Vector3());
+    const tableSize = neuron.tableSize;
+    const cellSize = neuron.cellSize;
+
+    neuron.colorOpacity = 1.0;
+    neuron.numberOpacity = 0.0;
 
     [...neuron.productBoxes, ...neuron.equalsBoxes].forEach(box => {
-        box.startWidth = cellSize.x;
-        box.startHeight = cellSize.x;
-        box.endWidth = cellSize.x;
-        box.endHeight = cellSize.x;
+        box.startWidth = cellSize;
+        box.startHeight = cellSize;
+        box.endWidth = cellSize;
+        box.endHeight = cellSize;
     });
 
     // Create camera
@@ -36,11 +39,11 @@ function getAnimationTimeline({
     const fov = 45;
     const camera = new THREE.PerspectiveCamera(fov, canvasWidth/canvasHeight, 1, 100000);
 
-    camera.position.x = tableSize.x/2;
+    camera.position.x = tableSize/2;
     camera.position.y = 3000;
     camera.position.z = productGroup.position.z + 3000;
 
-    camera.lookAt(new THREE.Vector3(tableSize.x/2, -tableSize.y/2, productGroup.position.z));
+    camera.lookAt(new THREE.Vector3(tableSize/2, -tableSize/2, productGroup.position.z));
 
     // Render
     const container = document.getElementById('container');
@@ -50,20 +53,16 @@ function getAnimationTimeline({
     container.appendChild(renderEl);
     renderer.setSize(canvasWidth, canvasHeight);
 
+    neuron.channelMargin = - tableSize / 2;
     const controls = new OrbitControls(camera, renderEl);
 
     function render() {
-        const productBoxes = _.range(neuron.numChannels).map(
-            i => neuron.group.getObjectByName(`productBox${i}`)
-        )
-        const eqBoxes = _.range(neuron.numChannels).map(
-            i => neuron.group.getObjectByName(`eqBox${i}`)
-        )
-        const sumBox = neuron.group.getObjectByName('sumBox');
-        const actBox = neuron.group.getObjectByName('activationBox');
-        [...productBoxes, ...eqBoxes, sumBox, actBox].forEach(
-            b => b.getObjectByName('operand').lookAt(camera.position)
-        )
+        // [
+        //     ...neuron.productBoxes,
+        //     ...neuron.equalsBoxes,
+        //     neuron.sumBox,
+        //     neuron.actBox
+        // ].forEach(b => b.operand.lookAt(camera.position))
         renderer.render(scene, camera); 
     }
 
@@ -93,8 +92,8 @@ function getAnimationTimeline({
 
     tl.from(camera.position, {
         x: inputColorGroup.position.x + 2000,
-        y: inputColorGroup.position.y - tableSize.y / 2,
-        z: inputColorGroup.position.z - tableSize.x / 2,
+        y: inputColorGroup.position.y - tableSize / 2,
+        z: inputColorGroup.position.z - tableSize / 2,
         duration: 2,
         delay: 2,
     }).from(camera.rotation, {
@@ -127,7 +126,7 @@ function getAnimationTimeline({
             if (i < arr.length - 1) {
                 tl.to(opBoxPositions, {y: `-=${cellSize.y}`, z: `+=${(row.length - 1)*cellSize.x}`, duration: duration});
             }
-            tl.to(opBoxPositions, {y: `-=${tableSize.y}`, z: `+=${shiftX}`});
+            tl.to(opBoxPositions, {y: `-=${tableSize}`, z: `+=${shiftX}`});
         })
     );
     tl.to([opBoxTimes, opBoxEq], {width: 0});
@@ -163,9 +162,9 @@ function getNumDims(arr) {
 
 function getGhostSceneComps(input, weights) {
     // Create scene
-    const scene = new THREE.Scene();
-
     const neuron = new Neuron({input, weights, bias: 50});
+
+    const scene = new THREE.Scene();
     scene.add(neuron.group);
 
     const inputImageGroup = getColorTable({
@@ -186,7 +185,7 @@ function getGhostSceneComps(input, weights) {
     const inputGroup = neuron.group.getObjectByName('input');
     inputImageGroup.position.x = inputGroup.children[midChannel].position.x
     inputImageGroup.name = "inputImage";
-    scene.add(inputImageGroup);
+    // scene.add(inputImageGroup);
 
 
     const gridHelper = new THREE.GridHelper(1000, 10);
