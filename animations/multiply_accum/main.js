@@ -2,7 +2,7 @@ import {
     getObjectCenter, getObjectSize,
     floatToRed, floatToGreen, floatToBlue,
     getNumberTable, getColorTable, idxToNumber,
-    getSquareTextMesh
+    getSquareTextMesh, getTable
 } from '../image_palette/image_palette.js';
 import * as THREE from '../lib/three.module.js';
 import cyanGhostRed from './cyan_ghost_red.js';
@@ -107,6 +107,18 @@ function getAnimationTimeline({
         }
     );
 
+    tl.to(redNumberGroup.rotation, {
+        y: Math.PI / 3
+    }).to(redNumberGroup.position, {
+        x: "-=400"
+    }, '<').to(redWeightGroup.position, {
+        x: "+=400",
+        y: `+=${shiftY}`
+    }, '<').to(redWeightGroup.rotation, {
+        y: Math.PI / 3
+    }, '<');
+
+    /**
     tl.add(
         animateTablesToMAC({
             pixelMeshes: redNumberMeshes,
@@ -132,6 +144,7 @@ function getAnimationTimeline({
             shiftX, shiftY, scene
         })
     );
+    */
 
     return tl;
 }
@@ -162,7 +175,10 @@ function animateTablesToMAC({
             const weight = weightNumbers[i][j];
             const weightMesh = weightMeshes[i][j];
 
+            console.log(pixel)
+            console.log(weight)
             const result = (pixel * weight).toFixed(2);
+            console.log(result)
             const resultMesh = getSquareTextMesh(result, cellSize, 0);
 
             const timesMesh = getSquareTextMesh("×", cellSize, 0);

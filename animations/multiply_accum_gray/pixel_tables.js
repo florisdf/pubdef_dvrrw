@@ -1,3 +1,4 @@
+import { getObjectSize } from '../image_palette/image_palette.js';
 import * as THREE from 'three';
 
 
@@ -9,30 +10,24 @@ export function getTable({
     const numCols = Math.max(...cells.map(row => row.length));
 
     const group = new THREE.Group();
-    const cellMeshes = [];
 
     let i, j;
     for (i = 0; i < numRows; i++) {
         const row = cells[i];
-        cellMeshes.push([])
         for (j = 0; j < numCols; j++) {
             if (row.length <= j) {
                 continue;
             }
             const cell = cells[i][j];
             const mesh = cellToMesh(cell);
-            mesh.position.x = j*(cellSize + cellMarginX) + cellSize/2;
-            mesh.position.y = - i*(cellSize + cellMarginY) - cellSize/2;
+            mesh.position.x = j*(cellSize + cellMarginX);
+            mesh.position.y = - i*(cellSize + cellMarginY);
             mesh.position.z = 0;
             group.add(mesh);
-            cellMeshes[i].push(mesh);
         }
     }
 
-    return {
-        group: group,
-        meshes: cellMeshes
-    };
+    return group;
 }
 
 
@@ -69,8 +64,10 @@ export function getColorSquare({
             transparent: true,
         })
     }
-    var mesh = new THREE.Mesh(new THREE.PlaneGeometry(size, size), material)
+    const geometry = new THREE.PlaneGeometry(size, size);
+    geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(size/2, -size/2, 0));
 
+    const mesh = new THREE.Mesh(geometry, material)
     return mesh;
 }
 
@@ -128,7 +125,9 @@ export function getSquareTextMesh({
         transparent: true,
         side: THREE.DoubleSide,
     })
-    var mesh = new THREE.Mesh(new THREE.PlaneGeometry(size, size), material)
+    const geometry = new THREE.PlaneGeometry(size, size);
+    geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(size/2, -size/2, 0));
+    var mesh = new THREE.Mesh(geometry, material)
     return mesh
 }
 
@@ -153,4 +152,36 @@ export function getColoredNumberTable({
         },
         cellSize, cellMarginX, cellMarginY
     });
+}
+
+
+export function getMultiChannelColoredNumberTable({
+    numbers, numberToColor, cellSize, strokeWidth,
+    cellMarginX=0,
+    cellMarginY=cellMarginX,
+    channelMargin=100,
+    precision=2,
+    strokeColor='black',
+    fontSize=`${cellSize*.4}px`,
+}) {
+    const rgbTableGroup = new THREE.Group();
+    const channelTables = numbers.map((channel, i) => {
+        const group = getTable({
+            cells: channel,
+            cellToMesh: cell => {
+                const fillColor = numberToColor(cell, i);
+                const x = cell.toFixed(precision)
+                return getSquareTextMesh({
+                    text: `${x}`, size: cellSize, strokeWidth, strokeColor,
+                    fontSize, fillColor,
+                });
+            },
+            cellSize, cellMarginX, cellMarginY
+        });
+        const tableSize = getObjectSize(group);
+        const shiftX = tableSize.x + channelMargin;
+        group.position.x = [0, shiftX, 2*shiftX][i];
+        rgbTableGroup.add(group);
+    });
+    return rgbTableGroup;
 }
