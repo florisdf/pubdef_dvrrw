@@ -131,7 +131,9 @@ export class TableCell {
                 color: 'black',
                 side: THREE.DoubleSide,
             });
-            const blackMesh = new THREE.Mesh(geometry, blackMaterial)
+            const blackGeometry = geometry.clone();
+            blackGeometry.applyMatrix4(new THREE.Matrix4().makeTranslation(0, 0, -2));
+            const blackMesh = new THREE.Mesh(blackGeometry, blackMaterial)
             group.add(blackMesh);
         }
         group.add(textMesh);
