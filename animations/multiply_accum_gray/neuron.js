@@ -1,7 +1,5 @@
 import * as THREE from 'three';
-import {
-    getSquareTextMesh, getMultiChannelColoredNumberTable
-} from './pixel_tables.js';
+import { TableCell, PixelTable } from './pixel_tables.js';
 import { OperandBox } from './operand_box.js';
 
 
@@ -21,23 +19,24 @@ export class Neuron {
     #numberOpacity;
     #colorOpacity;
     #channelMargin;
-    #inputGroup;
-    #weightsGroup;
-    #productGroup;
-    #sumMesh;
-    #outputMesh;
+    #inputTable;
+    #weightsTable;
+    #productTable;
+    #sumCell;
+    #outputCell;
     #opShift;
     #opBoxOpacity;
     #productOutput;
     #macOutput;
     #output;
+    #precision;
     constructor({
         input, weights, bias, color = 'rgb(0,64,122)',
         actFunc = (out, bias) => out > bias ? 1.0 : 0.0,
         actFuncToStr = (bias) => `> ${bias} ?`,
         cellSize = 100, numberOpacity = 1.0,
         colorOpacity = 0.1, channelMargin = 100,
-        opShift = 500, opBoxOpacity = 0.1
+        opShift = 500, opBoxOpacity = 0.1, precision = 2,
     }) {
         this.#input = input;
         this.#weights = weights;
@@ -56,9 +55,11 @@ export class Neuron {
         this.#colorOpacity = colorOpacity;
         this.#opBoxOpacity = opBoxOpacity;
         this.#channelMargin = channelMargin;
-        this.#opShift = 500;
+        this.#opShift = opShift;
+        this.#precision = precision;
 
-        this.update();
+        this.#createComponents();
+        this.updatePositions();
     }
 
     get group() {
@@ -76,29 +77,30 @@ export class Neuron {
     get activationBox() {
         return this.#activationBox
     }
-    get inputGroup() {
-        return this.#inputGroup;
+    get inputTable() {
+        return this.#inputTable;
     }
-    get weightsGroup() {
-        return this.#weightsGroup;
+    get weightsTable() {
+        return this.#weightsTable;
     }
-    get productGroup() {
-        return this.#productGroup;
+    get productTable() {
+        return this.#productTable;
     }
-    get sumMesh() {
-        return this.#sumMesh;
+    get sumCell() {
+        return this.#sumCell;
     }
-    get outputMesh() {
-        return this.#outputMesh;
+    get outputCell() {
+        return this.#outputCell;
     }
 
     get input() {
         return this.#input;
     }
-    set input(input) {
-        this.#input = input;
-        this.#computeOutput();
-        this.update();
+    get weights() {
+        return this.#weights;
+    }
+    get bias() {
+        return this.#bias;
     }
 
     #computeProductOutput() {
@@ -111,33 +113,12 @@ export class Neuron {
         this.#output = this.#actFunc(this.#macOutput, this.#bias);
     }
 
-    get weights() {
-        return this.#weights;
-    }
-    set weights(weights) {
-        this.#weights = weights;
-        this.#computeProductOutput();
-        this.update();
-    }
-
-    get bias() {
-        return this.#bias;
-    }
-    set bias(bias) {
-        this.#bias = bias;
-        this.update();
-    }
-
     get numChannels() {
         return this.#input.length;
     }
 
     get color() {
         return this.#color;
-    }
-    set color(color) {
-        this.#color = color;
-        this.update()
     }
 
     get cellSize() {
@@ -155,7 +136,14 @@ export class Neuron {
     }
     set numberOpacity(numberOpacity) {
         this.#numberOpacity = numberOpacity;
-        this.update();
+        [
+            this.#inputTable, this.#weightsTable, this.#productTable
+        ].forEach(table => {
+            table.updateCellStyle({fontOpacity: this.#numberOpacity});
+        });
+        this.#outputCell.updateStyle({
+            fontOpacity: this.#numberOpacity,
+        });
     }
 
     get colorOpacity() {
@@ -163,7 +151,11 @@ export class Neuron {
     }
     set colorOpacity(colorOpacity) {
         this.#colorOpacity = colorOpacity;
-        this.update();
+        [
+            this.#inputTable, this.#weightsTable, this.#productTable
+        ].forEach(table => {
+            table.updateCellStyle({fillOpacity: this.#colorOpacity});
+        });
     }
 
     get channelMargin() {
@@ -171,14 +163,17 @@ export class Neuron {
     }
     set channelMargin(channelMargin) {
         this.#channelMargin = channelMargin;
-        this.update();
+        [
+            this.#inputTable, this.#weightsTable, this.#productTable
+        ].forEach(table => {
+            table.channelMargin = this.#channelMargin;
+        });
+
+        this.#sumBox.startWidth = this.#inputTable.size.x;
+        this.updatePositions();
     }
 
-    get pixelFontColor() {
-        return `rgba(0, 0, 0, ${this.#numberOpacity})`;
-    }
-
-    numberToColor(x, channel) {
+    valueToColor(x, channel) {
         x = Math.round(x * 255);
         const rgb = [0, 0, 0];
         if (this.numChannels === 1) {
@@ -188,47 +183,50 @@ export class Neuron {
         } else if (this.numChannels === 3) {
             rgb[channel] = x;
         }
-        return `rgba(${rgb.join(',')}, ${this.#colorOpacity})`;
+        return `rgb(${rgb.join(',')})`;
     }
 
-    update() {
+    #createComponents() {
         this.#group.clear();
 
-        const numberToColor = (x, c) => this.numberToColor(x, c);
-        this.#inputGroup = getMultiChannelColoredNumberTable({
-            numbers: this.#input,
-            numberToColor,
+        const valueToColor = (x, c) => this.valueToColor(x, c);
+        this.#inputTable = new PixelTable({
+            values: this.#input,
+            valueToColor,
             cellSize: this.#cellSize,
             strokeWidth: this.strokeWidth,
-            fontColor: this.pixelFontColor,
-            channelMargin: this.#channelMargin
+            channelMargin: this.#channelMargin,
+            fillOpacity: this.#colorOpacity,
+            fontOpacity: this.#numberOpacity,
         });
-        this.#inputGroup.name = "input";
-        this.#group.add(this.#inputGroup);
+        this.#inputTable.group.name = "input";
+        this.#group.add(this.#inputTable.group);
 
-        this.#weightsGroup = getMultiChannelColoredNumberTable({
-            numbers: this.#weights,
-            numberToColor,
+        this.#weightsTable = new PixelTable({
+            values: this.#weights,
+            valueToColor,
             cellSize: this.#cellSize,
             strokeWidth: this.strokeWidth,
-            fontColor: this.pixelFontColor,
-            channelMargin: this.#channelMargin
+            channelMargin: this.#channelMargin,
+            fillOpacity: this.#colorOpacity,
+            fontOpacity: this.#numberOpacity,
         });
-        this.#weightsGroup.position.z = this.#opShift;
-        this.#weightsGroup.name = "weights"
-        this.#group.add(this.#weightsGroup);
+        this.#weightsTable.group.position.z = this.#opShift;
+        this.#weightsTable.group.name = "weights"
+        this.#group.add(this.#weightsTable.group);
 
-        this.#productGroup = getMultiChannelColoredNumberTable({
-            numbers: this.#productOutput,
-            numberToColor,
+        this.#productTable = new PixelTable({
+            values: this.#productOutput,
+            valueToColor,
             cellSize: this.#cellSize,
             strokeWidth: this.strokeWidth,
-            fontColor: this.pixelFontColor,
-            channelMargin: this.#channelMargin
+            channelMargin: this.#channelMargin,
+            fillOpacity: this.#colorOpacity,
+            fontOpacity: this.#numberOpacity,
         });
-        this.#productGroup.position.z = 2*this.#opShift;
-        this.#productGroup.name = "productResult";
-        this.#group.add(this.#productGroup);
+        this.#productTable.group.position.z = 2*this.#opShift;
+        this.#productTable.group.name = "productResult";
+        this.#group.add(this.#productTable.group);
 
         this.#productBoxes = _.range(this.numChannels).map(
             () => new OperandBox({
@@ -240,11 +238,9 @@ export class Neuron {
             })
         );
         this.#productBoxes.forEach((box, i) => {
-            box.group.position.x = this.#inputGroup.children[i].position.x;
-            box.frustum.renderOrder = 1;
             box.group.name = `productBox${i}`;
+            this.#group.add(box.group);
         });
-        this.#productBoxes.forEach(box => this.#group.add(box.group));
 
         this.#equalsBoxes = _.range(this.numChannels).map(
             () => new OperandBox({
@@ -256,37 +252,27 @@ export class Neuron {
             })
         );
         this.#equalsBoxes.forEach((box, i) => {
-            box.group.position.x = this.#weightsGroup.children[i].position.x;
-            box.group.position.z = this.#weightsGroup.position.z;
-            box.frustum.renderOrder = 2;
             box.group.name = `eqBox${i}`;
+            this.#group.add(box.group);
         });
-        this.#equalsBoxes.forEach(box => this.#group.add(box.group));
 
-        const totalInputSize = new THREE.Box3().setFromObject(this.#inputGroup).getSize(new THREE.Vector3())
         this.#sumBox = new OperandBox({
             color: this.#color,
             opacity: this.#opBoxOpacity,
             depth: this.#opShift,
-            startWidth: totalInputSize.x,
-            startHeight: totalInputSize.y,
+            startWidth: this.#inputTable.size.x,
+            startHeight: this.#inputTable.size.y,
             endHeight: this.#cellSize,
             opChar: "+",
         });
-        this.#sumBox.group.position.z = this.#productGroup.position.z;
-        this.#sumBox.frustum.renderOrder = 3;
         this.#sumBox.group.name = 'sumBox'
         this.#group.add(this.#sumBox.group);
 
-        this.#sumMesh = getSquareTextMesh({
-            text: this.#macOutput, size: this.#cellSize, fillColor: 'white',
+        this.#sumCell = new TableCell({
+            text: this.#macOutput, width: this.#cellSize, height: this.#cellSize, fillColor: 'white',
         });
-        const macMeshSize = new THREE.Box3().setFromObject(this.#sumMesh).getSize(new THREE.Vector3())
-        this.#sumMesh.position.x = (this.#sumBox.startWidth - macMeshSize.x)/2;
-        this.#sumMesh.position.y = (- this.#sumBox.startHeight + macMeshSize.y)/2;
-        this.#sumMesh.position.z = this.#sumBox.group.position.z + this.#sumBox.depth;
-        this.#sumMesh.name = 'sum'
-        this.#group.add(this.#sumMesh);
+        this.#sumCell.group.name = 'sum'
+        this.#group.add(this.#sumCell.group);
 
         this.#activationBox = new OperandBox({
             color: this.#color,
@@ -295,28 +281,63 @@ export class Neuron {
             startHeight: this.#cellSize,
             opChar: this.#actFuncToStr(this.#bias),
         });
-        this.#activationBox.group.position.x = this.#sumMesh.position.x;
-        this.#activationBox.group.position.y = this.#sumMesh.position.y;
-        this.#activationBox.group.position.z = this.#sumMesh.position.z;
         this.#activationBox.group.name = 'activationBox';
         this.#group.add(this.#activationBox.group);
 
-        const invOut = 1 - this.#output;
-        const uInt = x => Math.round(x * 255);
-        this.#outputMesh = getSquareTextMesh({
-            text: this.#output.toFixed(2), size: this.#cellSize,
-            fillColor: `rgba(${uInt(this.#output)},${uInt(this.#output)},${uInt(this.#output)})`,
-            fontColor: `rgba(${uInt(invOut)},${uInt(invOut)},${uInt(invOut)}, ${this.#numberOpacity})`,
+        this.#outputCell = new TableCell({
+            text: this.#output.toFixed(this.#precision),
+            width: this.#cellSize,
+            height: this.#cellSize,
+            fillColor: this.outputFillColor,
+            fontColor: this.outputFontColor,
+            fontOpacity: this.#numberOpacity,
         });
+        this.#outputCell.group.name = 'output';
+        this.#group.add(this.#outputCell.group);
+    }
+
+    updatePositions() {
+        this.#productBoxes.forEach((box, i) => {
+            box.group.position.x = this.#inputTable.group.children[i].position.x;
+            box.frustum.renderOrder = 1;
+        });
+
+        this.#equalsBoxes.forEach((box, i) => {
+            box.group.position.x = this.#weightsTable.group.children[i].position.x;
+            box.group.position.z = this.#weightsTable.group.position.z;
+            box.frustum.renderOrder = 2;
+        });
+
+        this.#sumBox.group.position.z = this.#productTable.group.position.z;
+        this.#sumBox.frustum.renderOrder = 1;
+
+        const macMeshSize = new THREE.Box3().setFromObject(this.#sumCell.group).getSize(new THREE.Vector3())
+        this.#sumCell.group.position.x = (this.#sumBox.startWidth - macMeshSize.x)/2;
+        this.#sumCell.group.position.y = (- this.#sumBox.startHeight + macMeshSize.y)/2;
+        this.#sumCell.group.position.z = this.#sumBox.group.position.z + this.#sumBox.depth;
+
+        this.#activationBox.group.position.x = this.#sumCell.group.position.x;
+        this.#activationBox.group.position.y = this.#sumCell.group.position.y;
+        this.#activationBox.group.position.z = this.#sumCell.group.position.z;
+
         const actBoxSize = new THREE.Box3().setFromObject(this.#activationBox.group).getSize(new THREE.Vector3());
-        this.#outputMesh.position.x = this.#activationBox.group.position.x;
-        this.#outputMesh.position.y = this.#activationBox.group.position.y;
-        this.#outputMesh.position.z = this.#activationBox.group.position.z + actBoxSize.z;
-        this.#outputMesh.renderOrder = 5;
-        this.#outputMesh.name = 'output';
-        this.#group.add(this.#outputMesh);
+        this.#outputCell.group.position.x = this.#activationBox.group.position.x;
+        this.#outputCell.group.position.y = this.#activationBox.group.position.y;
+        this.#outputCell.group.position.z = this.#activationBox.group.position.z + actBoxSize.z;
+        this.#outputCell.group.renderOrder = 5;
+    }
+
+    get outputFillColor() {
+        return `rgb(${uInt(this.#output)},${uInt(this.#output)},${uInt(this.#output)})`;
+    }
+
+    get outputFontColor() {
+        const invOut = this.#output < 0.3 ? 1 - this.#output : this.#output;
+        return `rgb(${uInt(invOut)},${uInt(invOut)},${uInt(invOut)})`;
     }
 }
+
+const uInt = x => Math.round(x * 255);
 
 function elWiseProduct(inputNumbers, weightNumbers) {
     return inputNumbers.map((row, i) => row.map((number, j) => number * weightNumbers[i][j]));

@@ -19,16 +19,17 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 function getAnimationTimeline({
     neuron, scene
 }) {
-    const inputGroup = neuron.inputGroup;
-    const productGroup = neuron.productGroup;
+    const productGroup = neuron.productTable.group;
     const tableSize = neuron.tableSize;
     const cellSize = neuron.cellSize;
 
     [...neuron.productBoxes, ...neuron.equalsBoxes].forEach(box => {
-        box.startWidth = cellSize;
-        box.startHeight = cellSize;
-        box.endWidth = cellSize;
-        box.endHeight = cellSize;
+        box.updateWidthHeight({
+            startWidth: cellSize,
+            startHeight: cellSize,
+            endWidth: cellSize,
+            endHeight: cellSize
+        })
     });
 
     // Create camera
@@ -80,9 +81,16 @@ function getAnimationTimeline({
         },
     });
 
-    neuron.channelMargin = -tableSize;
-    neuron.colorOpacity = 1.0;
-    neuron.numberOpacity = 0.0;
+    /**
+    tl.to(neuron, {
+        colorOpacity: 1.0,
+        numberOpacity: 0.0,
+        duration: 2,
+    }).to(neuron, {
+        channelMargin: -tableSize,
+        duration: 2,
+    });
+    */
 
     return tl;
 }
@@ -103,10 +111,10 @@ function getGhostSceneComps(input, weights) {
     const scene = new THREE.Scene();
     scene.add(neuron.group);
 
-    const gridHelper = new THREE.GridHelper(1000, 10);
-    const axesHelper = new THREE.AxesHelper(2000);
-    scene.add(gridHelper);
-    scene.add(axesHelper);
+    // const gridHelper = new THREE.GridHelper(1000, 10);
+    // const axesHelper = new THREE.AxesHelper(2000);
+    // scene.add(gridHelper);
+    // scene.add(axesHelper);
 
     return { neuron, scene };
 }
