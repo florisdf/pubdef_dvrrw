@@ -81,7 +81,6 @@ function getAnimationTimeline({
         },
     });
 
-    /**
     tl.to(neuron, {
         colorOpacity: 1.0,
         numberOpacity: 0.0,
@@ -90,7 +89,6 @@ function getAnimationTimeline({
         channelMargin: -tableSize,
         duration: 2,
     });
-    */
 
     return tl;
 }
