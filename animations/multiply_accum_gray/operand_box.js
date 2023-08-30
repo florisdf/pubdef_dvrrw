@@ -9,7 +9,6 @@ export class OperandBox {
     #startWidth;
     #endWidth;
     #opacity;
-    #edgeOpacity;
     #color;
     #opChar;
     constructor({
@@ -20,7 +19,6 @@ export class OperandBox {
         startWidth = startHeight,
         endHeight = startHeight,
         endWidth = endHeight,
-        edgeOpacity = 0.5,
         opChar,
     }) {
         this.#depth = depth;
@@ -31,7 +29,6 @@ export class OperandBox {
         this.#opacity = opacity;
         this.#color = color;
         this.#opChar = opChar;
-        this.#edgeOpacity = edgeOpacity;
         this.group = new THREE.Group();
         this.#createComponents();
     }
@@ -89,8 +86,6 @@ export class OperandBox {
             new THREE.EdgesGeometry(geometry),
             new THREE.LineBasicMaterial({
                 color: frustumColor,
-                transparent: true,
-                opacity: this.#edgeOpacity,
             })
         );
 
@@ -114,6 +109,10 @@ export class OperandBox {
 
         this.group.add(this.operand);
         this.group.add(this.frustum);
+
+        this.frustumMesh.renderOrder = 1;
+        this.operand.renderOrder = this.frustumMesh.renderOrder + 1;
+        this.edgesMesh.renderOrder = this.operand.renderOrder + 1;
     }
 
     get opSize() {
