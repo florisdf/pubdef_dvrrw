@@ -1,7 +1,7 @@
 import { idxToNumber, } from '../image_palette/image_palette.js';
-import ghostIdxsRed from './cyan_ghost_red.js';
-import ghostIdxsGreen from './cyan_ghost_green.js';
-import ghostIdxsBlue from './cyan_ghost_blue.js';
+import ghostIdxsRed from '../multiply_accum_gray/cyan_ghost_red.js';
+import ghostIdxsGreen from '../multiply_accum_gray/cyan_ghost_green.js';
+import ghostIdxsBlue from '../multiply_accum_gray/cyan_ghost_blue.js';
 import populatedMaze from './populated_maze.js';
 
 import { PixelTable } from '../multiply_accum_gray/pixel_tables.js';
@@ -21,7 +21,7 @@ function main() {
 
     const mazeRGB = populatedMaze.map(c => idxToNumber(c, palette));
 
-    const table = PixelTable({
+    const table = new PixelTable({
         values: mazeRGB,
         valueToColor: (x, channel) => {
             x = Math.round(x * 255);
@@ -31,10 +31,18 @@ function main() {
         },
         cellSize: 100,
         strokeWidth: 0,
+        fontOpacity: 0,
     });
+    const tableSize = table.size;
+    table.channelMargin = - tableSize;
 
     const scene = new THREE.Scene();
     scene.add(table.group);
+
+    const gridHelper = new THREE.GridHelper(1000, 10);
+    const axesHelper = new THREE.AxesHelper(2000);
+    scene.add(gridHelper);
+    scene.add(axesHelper);
 
     // Create camera
     const canvasWidth = window.innerWidth;
@@ -43,11 +51,11 @@ function main() {
     const fov = 45;
     const camera = new THREE.PerspectiveCamera(fov, canvasWidth/canvasHeight, 1, 100000);
 
-    camera.position.x = tableSize/2;
-    camera.position.y = 3000;
-    camera.position.z = productGroup.position.z + 3000;
+    // camera.position.x = tableSize/2;
+    // camera.position.y = 3000;
+    camera.position.z = table.group.position.z + 3000;
 
-    camera.lookAt(new THREE.Vector3(tableSize/2, -tableSize/2, productGroup.position.z));
+    // camera.lookAt(new THREE.Vector3(tableSize/2, -tableSize/2, table.group.position.z));
 
     // Render
     const container = document.getElementById('container');
@@ -68,6 +76,7 @@ function main() {
         controls.update()
         requestAnimationFrame(animateControl);
     }
+    animateControl();
 
     // Animate
     const tl = gsap.timeline({
@@ -79,7 +88,6 @@ function main() {
         },
     });
 
-    const tl = getAnimationTimeline(getGhostSceneComps(inputNumbers, weightNumbers));
     tl.play();
 }
 
