@@ -26,65 +26,39 @@ export class Neuron {
     #productGroup;
     #sumMesh;
     #outputMesh;
+    #opShift;
+    #opBoxOpacity;
+    #productOutput;
+    #macOutput;
+    #output;
     constructor({
         input, weights, bias, color = 'rgb(0,64,122)',
         actFunc = (out, bias) => out > bias ? 1.0 : 0.0,
         actFuncToStr = (bias) => `> ${bias} ?`,
         cellSize = 100, numberOpacity = 1.0,
-        colorOpacity = 0.1, channelMargin = 100.
+        colorOpacity = 0.1, channelMargin = 100,
+        opShift = 500, opBoxOpacity = 0.1
     }) {
         this.#input = input;
         this.#weights = weights;
         this.#bias = bias;
+        this.#actFunc = actFunc;
+
+        this.#computeProductOutput();
+        this.#computeMacOutput();
+        this.#computeOutput();
+
         this.#group = new THREE.Group();
         this.#color = color;
-        this.#actFunc = actFunc;
         this.#actFuncToStr = actFuncToStr;
         this.#cellSize = cellSize;
         this.#numberOpacity = numberOpacity;
         this.#colorOpacity = colorOpacity;
+        this.#opBoxOpacity = opBoxOpacity;
         this.#channelMargin = channelMargin;
+        this.#opShift = 500;
 
         this.update();
-    }
-
-    update() {
-        this.group.clear();
-
-        const {
-            inputGroup,
-            productBoxes,
-            weightsGroup,
-            equalsBoxes,
-            productGroup,
-            sumBox,
-            sumMesh,
-            activationBox,
-            outputMesh,
-        } = createNeuron({
-            input: this.#input,
-            weights: this.#weights,
-            bias: this.#bias,
-            group: this.#group,
-            color: this.#color,
-            actFunc: this.#actFunc,
-            actFuncToStr: this.#actFuncToStr,
-            cellSize: this.#cellSize,
-            numberOpacity: this.#numberOpacity,
-            colorOpacity: this.#colorOpacity,
-            strokeWidth: this.#numberOpacity * 3,
-            channelMargin: this.#channelMargin,
-        });
-        this.#productBoxes = productBoxes;
-        this.#equalsBoxes = equalsBoxes;
-        this.#sumBox = sumBox;
-        this.#activationBox = activationBox;
-
-        this.#inputGroup = inputGroup;
-        this.#weightsGroup = weightsGroup;
-        this.#productGroup = productGroup;
-        this.#sumMesh = sumMesh;
-        this.#outputMesh = outputMesh;
     }
 
     get group() {
@@ -123,7 +97,18 @@ export class Neuron {
     }
     set input(input) {
         this.#input = input;
+        this.#computeOutput();
         this.update();
+    }
+
+    #computeProductOutput() {
+        this.#productOutput = this.#input.map((ch, i) => elWiseProduct(ch, this.#weights[i]));
+    }
+    #computeMacOutput() {
+        this.#macOutput = (this.#productOutput.flat().flat().reduce((acc, curr) => acc + curr, 0)).toFixed(1);
+    }
+    #computeOutput() {
+        this.#output = this.#actFunc(this.#macOutput, this.#bias);
     }
 
     get weights() {
@@ -131,6 +116,7 @@ export class Neuron {
     }
     set weights(weights) {
         this.#weights = weights;
+        this.#computeProductOutput();
         this.update();
     }
 
@@ -157,13 +143,11 @@ export class Neuron {
     get cellSize() {
         return this.#cellSize;
     }
-    set cellSize(cellSize) {
-        this.#cellSize = cellSize;
-        this.update();
-    }
-
     get tableSize() {
         return this.#input[0].length * this.#cellSize;
+    }
+    get strokeWidth() {
+        return this.numberOpacity * 3;
     }
 
     get numberOpacity() {
@@ -189,173 +173,150 @@ export class Neuron {
         this.#channelMargin = channelMargin;
         this.update();
     }
-}
 
-function createNeuron({
-    input, weights, bias, group,
-    color,
-    prodBoxHeight,
-    actFunc, actFuncToStr,
-    cellSize, numberOpacity, colorOpacity,
-    strokeWidth = cellSize / 100,
-    channelMargin
-}) {
-    const numChannels = input.length;
-    const opShift = 500;
+    get pixelFontColor() {
+        return `rgba(0, 0, 0, ${this.#numberOpacity})`;
+    }
 
-    const numberToColor = (x, channel) => {
+    numberToColor(x, channel) {
         x = Math.round(x * 255);
         const rgb = [0, 0, 0];
-        if (numChannels === 1) {
+        if (this.numChannels === 1) {
             rgb[0] = x;
             rgb[1] = x;
             rgb[2] = x;
-        } else if (numChannels === 3) {
+        } else if (this.numChannels === 3) {
             rgb[channel] = x;
         }
-        return `rgba(${rgb.join(',')}, ${colorOpacity})`;
-    };
-    const fontColor = `rgba(0, 0, 0, ${numberOpacity})`;
+        return `rgba(${rgb.join(',')}, ${this.#colorOpacity})`;
+    }
 
-    const inputGroup = getMultiChannelColoredNumberTable({
-        numbers: input,
-        numberToColor,
-        cellSize,
-        strokeWidth,
-        fontColor: fontColor,
-        channelMargin
-    });
-    inputGroup.name = "input";
-    group.add(inputGroup);
+    update() {
+        this.#group.clear();
 
-    const weightsGroup = getMultiChannelColoredNumberTable({
-        numbers: weights,
-        numberToColor,
-        cellSize,
-        strokeWidth,
-        fontColor: fontColor,
-        channelMargin
-    });
-    weightsGroup.position.z = opShift;
-    weightsGroup.name = "weights"
-    group.add(weightsGroup);
+        const numberToColor = (x, c) => this.numberToColor(x, c);
+        this.#inputGroup = getMultiChannelColoredNumberTable({
+            numbers: this.#input,
+            numberToColor,
+            cellSize: this.#cellSize,
+            strokeWidth: this.strokeWidth,
+            fontColor: this.pixelFontColor,
+            channelMargin: this.#channelMargin
+        });
+        this.#inputGroup.name = "input";
+        this.#group.add(this.#inputGroup);
 
-    const productNumbers = input.map((ch, i) => elWiseProduct(ch, weights[i]));
-    const productGroup = getMultiChannelColoredNumberTable({
-        numbers: productNumbers,
-        numberToColor,
-        cellSize,
-        strokeWidth,
-        fontColor: fontColor,
-        channelMargin
-    });
-    productGroup.position.z = 2*opShift;
-    productGroup.name = "productResult";
-    group.add(productGroup);
+        this.#weightsGroup = getMultiChannelColoredNumberTable({
+            numbers: this.#weights,
+            numberToColor,
+            cellSize: this.#cellSize,
+            strokeWidth: this.strokeWidth,
+            fontColor: this.pixelFontColor,
+            channelMargin: this.#channelMargin
+        });
+        this.#weightsGroup.position.z = this.#opShift;
+        this.#weightsGroup.name = "weights"
+        this.#group.add(this.#weightsGroup);
 
-    const tableSize = new THREE.Box3().setFromObject(inputGroup).getSize(new THREE.Vector3())
+        this.#productGroup = getMultiChannelColoredNumberTable({
+            numbers: this.#productOutput,
+            numberToColor,
+            cellSize: this.#cellSize,
+            strokeWidth: this.strokeWidth,
+            fontColor: this.pixelFontColor,
+            channelMargin: this.#channelMargin
+        });
+        this.#productGroup.position.z = 2*this.#opShift;
+        this.#productGroup.name = "productResult";
+        this.#group.add(this.#productGroup);
 
-    const productBoxes = _.range(numChannels).map(
-        () => new OperandBox({
-            color: color,
-            opacity: 0.1,
-            depth: opShift,
-            startHeight: tableSize.y,
-            opChar: "×",
-        })
-    );
-    productBoxes.forEach((box, i) => {
-        box.group.position.x = inputGroup.children[i].position.x;
-        box.frustum.renderOrder = 1;
-        box.group.name = `productBox${i}`;
-    });
-    productBoxes.forEach(box => group.add(box.group));
+        this.#productBoxes = _.range(this.numChannels).map(
+            () => new OperandBox({
+                color: this.#color,
+                opacity: this.#opBoxOpacity,
+                depth: this.#opShift,
+                startHeight: this.tableSize,
+                opChar: "×",
+            })
+        );
+        this.#productBoxes.forEach((box, i) => {
+            box.group.position.x = this.#inputGroup.children[i].position.x;
+            box.frustum.renderOrder = 1;
+            box.group.name = `productBox${i}`;
+        });
+        this.#productBoxes.forEach(box => this.#group.add(box.group));
 
-    const equalsBoxes = _.range(numChannels).map(
-        () => new OperandBox({
-            color: color,
-            opacity: 0.1,
-            depth: opShift,
-            startHeight: tableSize.y,
-            opChar: "=",
-        })
-    );
-    equalsBoxes.forEach((box, i) => {
-        box.group.position.x = weightsGroup.children[i].position.x;
-        box.group.position.z = weightsGroup.position.z;
-        box.frustum.renderOrder = 2;
-        box.group.name = `eqBox${i}`;
-    });
-    equalsBoxes.forEach(box => group.add(box.group));
+        this.#equalsBoxes = _.range(this.numChannels).map(
+            () => new OperandBox({
+                color: this.#color,
+                opacity: this.#opBoxOpacity,
+                depth: this.#opShift,
+                startHeight: this.tableSize,
+                opChar: "=",
+            })
+        );
+        this.#equalsBoxes.forEach((box, i) => {
+            box.group.position.x = this.#weightsGroup.children[i].position.x;
+            box.group.position.z = this.#weightsGroup.position.z;
+            box.frustum.renderOrder = 2;
+            box.group.name = `eqBox${i}`;
+        });
+        this.#equalsBoxes.forEach(box => this.#group.add(box.group));
 
-    const sumBox = new OperandBox({
-        color: color,
-        opacity: 0.05,
-        depth: opShift,
-        startWidth: tableSize.x,
-        startHeight: tableSize.y,
-        endHeight: cellSize,
-        opChar: "+",
-    });
-    sumBox.group.position.z = productGroup.position.z;
-    sumBox.frustum.renderOrder = 3;
-    sumBox.group.name = 'sumBox'
-    group.add(sumBox.group);
+        const totalInputSize = new THREE.Box3().setFromObject(this.#inputGroup).getSize(new THREE.Vector3())
+        this.#sumBox = new OperandBox({
+            color: this.#color,
+            opacity: this.#opBoxOpacity,
+            depth: this.#opShift,
+            startWidth: totalInputSize.x,
+            startHeight: totalInputSize.y,
+            endHeight: this.#cellSize,
+            opChar: "+",
+        });
+        this.#sumBox.group.position.z = this.#productGroup.position.z;
+        this.#sumBox.frustum.renderOrder = 3;
+        this.#sumBox.group.name = 'sumBox'
+        this.#group.add(this.#sumBox.group);
 
-    const macResult = (productNumbers.flat().flat().reduce((acc, curr) => acc + curr, 0)).toFixed(1);
-    const sumMesh = getSquareTextMesh({
-        text: macResult, size: cellSize, fillColor: 'white',
-    });
-    const macMeshSize = new THREE.Box3().setFromObject(sumMesh).getSize(new THREE.Vector3())
-    sumMesh.position.x = (sumBox.startWidth - macMeshSize.x)/2;
-    sumMesh.position.y = (- sumBox.startHeight + macMeshSize.y)/2;
-    sumMesh.position.z = sumBox.group.position.z + sumBox.depth;
-    sumMesh.name = 'sum'
-    group.add(sumMesh);
+        this.#sumMesh = getSquareTextMesh({
+            text: this.#macOutput, size: this.#cellSize, fillColor: 'white',
+        });
+        const macMeshSize = new THREE.Box3().setFromObject(this.#sumMesh).getSize(new THREE.Vector3())
+        this.#sumMesh.position.x = (this.#sumBox.startWidth - macMeshSize.x)/2;
+        this.#sumMesh.position.y = (- this.#sumBox.startHeight + macMeshSize.y)/2;
+        this.#sumMesh.position.z = this.#sumBox.group.position.z + this.#sumBox.depth;
+        this.#sumMesh.name = 'sum'
+        this.#group.add(this.#sumMesh);
 
-    const activationBox = new OperandBox({
-        color: color,
-        opacity: 0.1,
-        depth: opShift,
-        startHeight: cellSize,
-        opChar: actFuncToStr(bias),
-    });
-    activationBox.group.position.x = sumMesh.position.x;
-    activationBox.group.position.y = sumMesh.position.y;
-    activationBox.group.position.z = sumMesh.position.z;
-    activationBox.group.name = 'activationBox';
-    group.add(activationBox.group);
+        this.#activationBox = new OperandBox({
+            color: this.#color,
+            opacity: this.#opBoxOpacity,
+            depth: this.#opShift,
+            startHeight: this.#cellSize,
+            opChar: this.#actFuncToStr(this.#bias),
+        });
+        this.#activationBox.group.position.x = this.#sumMesh.position.x;
+        this.#activationBox.group.position.y = this.#sumMesh.position.y;
+        this.#activationBox.group.position.z = this.#sumMesh.position.z;
+        this.#activationBox.group.name = 'activationBox';
+        this.#group.add(this.#activationBox.group);
 
-    const output = actFunc(macResult, bias).toFixed(2);
-    const invOut = 1 - output;
-    const uInt = x => Math.round(x * 255);
-    const outputMesh = getSquareTextMesh({
-        text: output, size: cellSize,
-        fillColor: `rgba(${uInt(output)},${uInt(output)},${uInt(output)})`,
-        fontColor: `rgba(${uInt(invOut)},${uInt(invOut)},${uInt(invOut)}, ${numberOpacity})`,
-    });
-    const actBoxSize = new THREE.Box3().setFromObject(activationBox.group).getSize(new THREE.Vector3());
-    outputMesh.position.x = activationBox.group.position.x;
-    outputMesh.position.y = activationBox.group.position.y;
-    outputMesh.position.z = activationBox.group.position.z + actBoxSize.z;
-    outputMesh.renderOrder = 5;
-    outputMesh.name = 'output';
-    group.add(outputMesh);
-
-    return {
-        neuronGroup: group,
-        inputGroup,
-        productBoxes,
-        weightsGroup,
-        equalsBoxes,
-        productGroup,
-        sumBox,
-        sumMesh,
-        activationBox,
-        outputMesh,
-    };
+        const invOut = 1 - this.#output;
+        const uInt = x => Math.round(x * 255);
+        this.#outputMesh = getSquareTextMesh({
+            text: this.#output.toFixed(2), size: this.#cellSize,
+            fillColor: `rgba(${uInt(this.#output)},${uInt(this.#output)},${uInt(this.#output)})`,
+            fontColor: `rgba(${uInt(invOut)},${uInt(invOut)},${uInt(invOut)}, ${this.#numberOpacity})`,
+        });
+        const actBoxSize = new THREE.Box3().setFromObject(this.#activationBox.group).getSize(new THREE.Vector3());
+        this.#outputMesh.position.x = this.#activationBox.group.position.x;
+        this.#outputMesh.position.y = this.#activationBox.group.position.y;
+        this.#outputMesh.position.z = this.#activationBox.group.position.z + actBoxSize.z;
+        this.#outputMesh.renderOrder = 5;
+        this.#outputMesh.name = 'output';
+        this.#group.add(this.#outputMesh);
+    }
 }
-
 
 function elWiseProduct(inputNumbers, weightNumbers) {
     return inputNumbers.map((row, i) => row.map((number, j) => number * weightNumbers[i][j]));
