@@ -22,13 +22,13 @@ export class PixelTable {
     #group;
     #cells;
 
-    #maxRow;
-    #maxCol;
+    #numPixelsShown;
+
     #channelDepth;
     constructor ({
         values, colors,
         cellSize, 
-        maxRow = null, maxCol = null,
+        numPixelsShown = null,
         strokeWidth=0,
         channelToColor=(ch, numCh) => `hsl(${ch*360/numCh}, 100%, ${numCh === 1 ? 100 : 50}%)`,
         cellDepth=cellSize,
@@ -55,8 +55,7 @@ export class PixelTable {
             fontSize,
             bgColor,
         }
-        this.#maxRow = maxRow === null ? this.numRows - 1 : maxRow;
-        this.#maxCol = maxCol === null ? this.numCols - 1 : maxCol;
+        this.#numPixelsShown = numPixelsShown === null ? this.numCols * this.numRows : numPixelsShown;
 
         this.channelToColor = channelToColor;
 
@@ -81,11 +80,12 @@ export class PixelTable {
         this.incomplChannelMeshes = [];
 
         if (this.numIncompleteRows > 0) {
+            const numIncompletePixels = this.#numPixelsShown % this.numCols;
             const incomplValues = sliceChannels(
-                this.#values, this.numCompleteRows, this.numCompleteRows + 1, 0, this.#maxCol + 1
+                this.#values, this.numCompleteRows, this.numCompleteRows + 1, 0, numIncompletePixels
             );
             const incomplColors = sliceChannels(
-                this.#colors, this.numCompleteRows, this.numCompleteRows + 1, 0, this.#maxCol + 1
+                this.#colors, this.numCompleteRows, this.numCompleteRows + 1, 0, numIncompletePixels
             );
             this.incomplChannelMeshes = getChannelMeshes({
                 colors: incomplColors, values: incomplValues,
@@ -144,41 +144,26 @@ export class PixelTable {
     }
 
     get numCompleteRows() {
-        return this.#maxCol === this.numCols - 1 ? this.#maxRow + 1: this.#maxRow;
+        return Math.floor(this.numPixelsShown / this.numCols);
     }
     get numIncompleteRows() {
-        return this.numRows - this.numCompleteRows;
+        return this.numPixelsShown % this.numCols === 0 ? 0 : 1;
     }
 
-    get maxRow() {
-        return this.#maxRow;
-    }
-    get maxCol() {
-        return this.#maxCol;
-    }
     get numPixelsShown() {
-        return this.numCompleteRows * this.numCols + this.numIncompleteRows * this.maxCol;
+        return this.#numPixelsShown;
     }
 
-    set maxRow(maxRow) {
-        const doUpdate = maxRow !== this.#maxRow;
-        this.#maxRow = maxRow;
-        if (doUpdate) {
-            this.updateIncomplGroup();
-            this.updateComplGroup();
-        }
-    }
-    set maxCol(maxCol) {
-        const doUpdate = maxCol !== this.#maxCol;
-        this.#maxCol = maxCol;
-
-        if (doUpdate) {
-            this.updateIncomplGroup();
-        }
-    }
     set numPixelsShown(numPixelsShown) {
-        this.maxRow = Math.floor(numPixelsShown / this.numCols);
-        this.maxCol = numPixelsShown - this.maxRow * this.numCols;
+        numPixelsShown = Math.round(numPixelsShown);
+
+        const doUpdate = numPixelsShown !== this.#numPixelsShown;
+        this.#numPixelsShown = numPixelsShown;
+
+        if (doUpdate) {
+            this.updateComplGroup();
+            this.updateIncomplGroup();
+        }
     }
 
     get cellSize() {
@@ -227,7 +212,7 @@ function getChannelMeshes({
         })
 
         const geometry = new THREE.BoxGeometry(canvas.width, canvas.height, channelDepth);
-        geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(new THREE.Vector3(canvas.width/2, -canvas.height/2, channelDepth/2)));
+        geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(new THREE.Vector3(canvas.width/2, -canvas.height/2, - channelDepth/2)));
 
         const texture = new THREE.CanvasTexture(canvas);
         const frontBackMaterial = new THREE.MeshBasicMaterial({

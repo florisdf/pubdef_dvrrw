@@ -14,11 +14,11 @@ import { PixelTable } from './pixel_tables.js';
 
 const toUInt = x => Math.round(x * 255 / 100);
 const idxToRGB = (r, g, b) => `rgb(${toUInt(r)}, ${toUInt(g)}, ${toUInt(b)})`;
-const idxsToRGB = (values) => values[0].map((row, i) =>
+const idxsToRGB = (values) => values.map(ch => ch.map((row, i) =>
     row.map((val, j) => {
         return idxToRGB(values[0][i][j], values[1][i][j], values[2][i][j]);
     })
-);
+));
 const monoIdxsToRGB = (values) => values.map((row, i) =>
     row.map((val, j) => {
         return idxToRGB(val, val, val);
@@ -38,7 +38,7 @@ function getNeuronGroup({
     color = 'darkblue',
     size = 180,
     cellSize = 20,
-    opacity = 0.75,
+    opacity = 0.2,
 } = {}) {
     const group = new THREE.Group();
 
@@ -53,14 +53,14 @@ function getNeuronGroup({
 
     const ghostIdxs = [ghostIdxsRed, ghostIdxsGreen, ghostIdxsBlue];
     const ghostValues = idxsToValues(ghostIdxs);
-    const ghostMesh = getImageMesh({
+    const ghostTable = new PixelTable({
         cellSize,
         colors: idxsToRGB(ghostIdxs),
         values: ghostValues,
     });
-    const ghostBox = new THREE.Box3().setFromObject(ghostMesh);
-    ghostMesh.position.z = depth/4 + ghostBox.getSize(new THREE.Vector3()).z;
-    group.add(ghostMesh);
+    const ghostBox = new THREE.Box3().setFromObject(ghostTable.group);
+    ghostTable.group.position.z = depth/4 + ghostBox.getSize(new THREE.Vector3()).z;
+    group.add(ghostTable.group);
 
     const eqGroup = new OperandBox({
         color,
@@ -69,7 +69,7 @@ function getNeuronGroup({
         startHeight: size,
         opChar: '=',
     }).group;
-    eqGroup.position.z = ghostMesh.position.z;
+    eqGroup.position.z = ghostTable.group.position.z;
     group.add(eqGroup);
 
     const sumGroup = new OperandBox({
@@ -110,8 +110,7 @@ function main() {
 
     const cellSize = 10;
 
-    /**
-    const imgMesh = getImageMesh({
+    const imgTable = new PixelTable({
         cellSize,
         colors: idxsToRGB(populatedMaze),
         values: idxsToValues(populatedMaze),
@@ -119,25 +118,30 @@ function main() {
         fontOpacity: 1.0,
         bgColor: 'white',
     });
-    scene.add(imgMesh);
+    scene.add(imgTable.group);
 
     const kernelSize = 9;
     const neuronGroup = getNeuronGroup({
         cellSize,
         size: cellSize*kernelSize,
+        depth: 500,
     });
     scene.add(neuronGroup);
     const neuronBox = new THREE.Box3().setFromObject(neuronGroup);
     const neuronSize = neuronBox.getSize(new THREE.Vector3());
-    **/
 
     const outputTable = new PixelTable({
         colors: [monoIdxsToRGB(outputIdxs)],
         values: [monoIdxsToValues(outputIdxs)],
         cellSize,
-        maxRow: 0,
-        maxCol: 0,
+        numPixelsShown: 0,
+        // fillOpacity: 0.5,
+        // fontOpacity: 1.0,
+        // bgColor: 'white',
     });
+    outputTable.group.position.z = neuronSize.z;
+    outputTable.group.position.x = Math.floor(kernelSize * cellSize / 2) - cellSize / 2;
+    outputTable.group.position.y = - Math.floor(kernelSize * cellSize / 2) + cellSize / 2;
     scene.add(outputTable.group);
 
     // const gridHelper = new THREE.GridHelper(1000, 10);
@@ -152,11 +156,10 @@ function main() {
     const fov = 45;
     const camera = new THREE.PerspectiveCamera(fov, canvasWidth/canvasHeight, 1, 100000);
 
-    // camera.position.x = tableSize/2;
-    // camera.position.y = 3000;
+    camera.position.x = -3000;
+    camera.position.y = 1000;
     camera.position.z = 2000;
-
-    // camera.lookAt(new THREE.Box3().setFromObject(imageMesh.group).getCenter(new THREE.Vector3()));
+    camera.lookAt(neuronBox.getCenter(new THREE.Vector3()));
 
     // Render
     const container = document.getElementById('container');
@@ -166,7 +169,7 @@ function main() {
     container.appendChild(renderEl);
     renderer.setSize(canvasWidth, canvasHeight);
 
-    const controls = new OrbitControls(camera, renderEl);
+    // const controls = new OrbitControls(camera, renderEl);
 
     function render() {
         renderer.render(scene, camera); 
@@ -177,21 +180,31 @@ function main() {
         controls.update()
         requestAnimationFrame(animateControl);
     }
-    animateControl();
+    // animateControl();
 
     // Animate
     const tl = gsap.timeline({
         delay: 2,
         onUpdate: render,
-        onComplete: animateControl,
+        // onComplete: animateControl,
         defaults: {
             ease: "power2.inOut" 
         },
     });
 
-    tl.to(outputTable, {
-        numPixelsShown: outputIdxs[0].length * outputIdxs.length,
-        duration: 10,
+    _.range(outputTable.numRows).map(row => {
+        const duration = 0.1;
+        tl.to(outputTable, {
+            numPixelsShown: `+=${outputTable.numCols}`,
+            duration,
+        }).to(neuronGroup.position, {
+            x: (outputTable.numCols - Math.floor(kernelSize/2))*cellSize,
+            duration,
+        }, '<').to(neuronGroup.position, {
+            x: 0,
+            y: `-=${cellSize}`,
+            duration,
+        });
     });
 
     tl.play();
