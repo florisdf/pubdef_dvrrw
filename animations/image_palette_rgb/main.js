@@ -3,7 +3,7 @@ import {
     floatToRed, floatToGreen, floatToBlue,
     getNumberTableWithPalette, animatePaletteToTable
 } from '../image_palette/image_palette.js';
-import * as THREE from '../lib/three.module.js';
+import * as THREE from 'three';
 import waldek_red from './waldek_the_red.js';
 import waldek_green from './waldek_the_green.js';
 import waldek_blue from './waldek_the_blue.js';
@@ -12,6 +12,7 @@ import GSDevTools from '../lib/gsap-shockingly-green/GSDevTools.js';
 
 function getAnimationTimeline(sceneCompsRed, sceneCompsGreen, sceneCompsBlue) {
     const scene = new THREE.Scene();
+    scene.background = new THREE.Color( 0xffffff );
 
     const {sceneGroup: sceneGroupRed} = sceneCompsRed;
     const {sceneGroup: sceneGroupGreen} = sceneCompsGreen;
@@ -28,8 +29,8 @@ function getAnimationTimeline(sceneCompsRed, sceneCompsGreen, sceneCompsBlue) {
     scene.add(sceneGroupGreen);
     scene.add(sceneGroupBlue);
 
-    const canvasWidth = window.innerWidth;
-    const canvasHeight = window.innerHeight;
+    const canvasWidth = 1920;
+    const canvasHeight = 1080;
 
     const fov = 45;
     const camera = new THREE.PerspectiveCamera(fov, canvasWidth/canvasHeight, 1, 100000);
@@ -42,10 +43,10 @@ function getAnimationTimeline(sceneCompsRed, sceneCompsGreen, sceneCompsBlue) {
 
     const container = document.getElementById('container');
 
-    const renderer = new THREE.WebGLRenderer({alpha: true, antialias: true});
+    const renderer = new THREE.WebGLRenderer({antialias: true});
     renderer.setPixelRatio(window.devicePixelRatio)
-    const renderEl = renderer.domElement;
-    container.appendChild(renderEl);
+    const canvas = renderer.domElement;
+    container.appendChild(canvas);
     renderer.setSize(canvasWidth, canvasHeight);
     function render() {
         renderer.render(scene, camera);
@@ -53,7 +54,6 @@ function getAnimationTimeline(sceneCompsRed, sceneCompsGreen, sceneCompsBlue) {
     render()
 
     const tl = gsap.timeline({
-        delay: 0.5,
         paused: true,
         onUpdate: render,
         defaults: {
@@ -72,6 +72,8 @@ function getAnimationTimeline(sceneCompsRed, sceneCompsGreen, sceneCompsBlue) {
         if (i < arr.length - 1) {
             tlSub.to(camera.position, {
                 y: `-=${sceneShiftY}`,
+                duration: 2,
+                delay: 2,
             })
         }
         meshCloneGroups.push(meshCloneGroup);
@@ -84,6 +86,7 @@ function getAnimationTimeline(sceneCompsRed, sceneCompsGreen, sceneCompsBlue) {
         x: sceneCenterGreen.x,
         y: sceneCenterGreen.y,
         z: "+=13000",
+        duration: 2,
         onStart: () => {
             allSceneComps.forEach(({numberTableGroup, paletteColorMeshes}, i) =>  {
                 numberTableGroup.removeFromParent();
@@ -97,16 +100,39 @@ function getAnimationTimeline(sceneCompsRed, sceneCompsGreen, sceneCompsBlue) {
     tl.to(
         meshCloneGroups[0].position, {
             y: `-=${sceneShiftY}`,
-            duration: 2,
+            duration: 3,
+            delay: 3,
         }, 'meshOverlap'
     ).to(
         meshCloneGroups[2].position, {
             y: `+=${sceneShiftY}`,
-            duration: 2,
+            duration: 3,
+            delay: 3,
         }, 'meshOverlap'
     )
 
-    return tl;
+    return {tl, canvas};
+}
+
+
+async function capture({
+    tl, canvas, framerate = 30,
+    motionBlurFrames = 5,
+}) {
+    const capturer = new CCapture({
+        format: 'webm', framerate, motionBlurFrames
+    });
+    capturer.start();
+
+    const nFrames = tl.duration() * framerate * motionBlurFrames;
+    for (let t = 0; t <= nFrames; t++) {
+        tl.progress(t / nFrames);
+        capturer.capture(canvas);
+        await new Promise(resolve => requestAnimationFrame(resolve));
+    }
+    capturer.capture(canvas);
+    capturer.stop();
+    capturer.save();
 }
 
 
@@ -119,9 +145,9 @@ function main() {
     const sceneCompsGreen = getNumberTableWithPalette(waldek_green, paletteTable, floatToGreen)
     const sceneCompsBlue = getNumberTableWithPalette(waldek_blue, paletteTable, floatToBlue)
 
-    const tl = getAnimationTimeline(sceneCompsRed, sceneCompsGreen, sceneCompsBlue);
-    GSDevTools.create({animation: tl});
-    tl.play();
+    const {tl, canvas} = getAnimationTimeline(sceneCompsRed, sceneCompsGreen, sceneCompsBlue);
+    capture({tl, canvas});
+    // GSDevTools.create({animation: tl});
 }
 
 window.addEventListener('load', function () {
