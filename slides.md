@@ -145,7 +145,7 @@ Tabel Waldek
 
 # Algemene aanpak
 
-- Neuraal netwerk getraind met foto's van celebrity's kan een digitale vingerafdruk maken voor ieder gezicht in de fotoverzameling
+- Neuraal netwerk getraind met foto's gedownload van het internet kan een digitale vingerafdruk maken voor ieder gezicht in de fotoverzameling
 - We vergelijken deze vingerafdrukken met die van voorbeeldfoto's van de kinderen en kunnen zo op ieder gezicht een naam plakken
 
 ---
