@@ -90,6 +90,7 @@ async function capture({
     _.range(nFrames).forEach(i => {
         tl.progress(i / nFrames);
         capturer.capture(canvas);
+        await new Promise(resolve => requestAnimationFrame(resolve));
     })
 
     capturer.stop();
