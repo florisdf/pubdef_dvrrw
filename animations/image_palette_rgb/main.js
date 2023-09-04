@@ -9,6 +9,8 @@ import waldek_green from './waldek_the_green.js';
 import waldek_blue from './waldek_the_blue.js';
 import GSDevTools from '../lib/gsap-shockingly-green/GSDevTools.js';
 
+import capture from '../lib/capture.js';
+
 
 function getAnimationTimeline(sceneCompsRed, sceneCompsGreen, sceneCompsBlue) {
     const scene = new THREE.Scene();
@@ -61,6 +63,7 @@ function getAnimationTimeline(sceneCompsRed, sceneCompsGreen, sceneCompsBlue) {
         },
     });
 
+    tl.add(() => {}, "+=1")
     const allSceneComps = [sceneCompsRed, sceneCompsGreen, sceneCompsBlue];
     const meshCloneGroups = [];
     allSceneComps.forEach((sceneComps, i, arr) =>  {
@@ -110,29 +113,9 @@ function getAnimationTimeline(sceneCompsRed, sceneCompsGreen, sceneCompsBlue) {
             delay: 3,
         }, 'meshOverlap'
     )
+    tl.add(() => {}, "+=1")
 
     return {tl, canvas};
-}
-
-
-async function capture({
-    tl, canvas, framerate = 30,
-    motionBlurFrames = 5,
-}) {
-    const capturer = new CCapture({
-        format: 'webm', framerate, motionBlurFrames
-    });
-    capturer.start();
-
-    const nFrames = tl.duration() * framerate * motionBlurFrames;
-    for (let t = 0; t <= nFrames; t++) {
-        tl.progress(t / nFrames);
-        capturer.capture(canvas);
-        await new Promise(resolve => requestAnimationFrame(resolve));
-    }
-    capturer.capture(canvas);
-    capturer.stop();
-    capturer.save();
 }
 
 
