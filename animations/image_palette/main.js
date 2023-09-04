@@ -86,13 +86,11 @@ async function capture({
     capturer.start();
 
     const nFrames = tl.duration() * framerate * motionBlurFrames;
-
-    _.range(nFrames).forEach(i => {
-        tl.progress(i / nFrames);
+    for (let t = 0; t <= nFrames; t++) {
+        tl.progress(t / nFrames);
         capturer.capture(canvas);
         await new Promise(resolve => requestAnimationFrame(resolve));
-    })
-
+    }
     capturer.stop();
     capturer.save();
 }
