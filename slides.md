@@ -96,22 +96,7 @@ Tabel Waldek
 # Een neuraal netwerk *trainen*
 
 - Een doorsnee neuraal netwerk bevat al gauw duizenden neuronen. Welk patroon laten we elk van deze neuronen detecteren? Het is onbegonnen werk om handmatig op zoek te gaan naar welke patronen we het best gebruiken.
-- Gelukkig kunnen we de computer hiernaar laten zoeken.
-- We geven de computer vele foto's en zeggen telkens wie of wat er op de foto staat
-- Als we vertrekken van willekeurige patronen, zullen de vingerafdrukken van afbeeldingen van dezelfde persoon helemaal niet goed overeenkomen. Door aan de computer mee te geven welke foto's dezelfde vingerafdruk moeten krijgen en welke een verschillende, kan de computer uitzoeken wat goede patronen zijn voor de neuronen. We zeggen dat we het neuraal netwerk *trainen*
-
----
-
-# Meten hoe goed een neuraal netwerk kan herkennen
-
-- We meten hoe goed het neuraal netwerk kan herkennen door het een digitale vingerafdruk te laten berekenen voor een hoop *foto's* en te controleren hoe goed de vingerafdrukken van dezelfde persoon of hetzelfde voorwerp overeenkomen
-
-- Gegeven een bepaalde zoekafbeelding, sorteer de afbeeldingen van meest to minst gelijkend?
-- Als alle afbeeldingen van de juiste persoon vooraan zijn gerangschikt: 100%
-- Hoe meer de afbeeldingen van de juiste persoon naar achter gerangschikt zijn, hoe slechter de score
-- Helemaal achteraan: 0%
-- We doen dit voor een groot aantal zoekafbeeldingen, en berekenen dan de gemiddelde score
-- Dit noemen we de *mean Average Precision* (mAP)
+- Door aan de computer vele foto's te geven en telkens te zeggen wie of wat er op de foto staat, kan de computer uitzoeken wat goede patronen zijn voor de neuronen. We zeggen dat we het neuraal netwerk *trainen*.
 
 ---
 
@@ -120,7 +105,6 @@ Tabel Waldek
 - Een neuraal netwerk bevat vele neuronen die elk een klein patroontje detecteren
 - Neuraal netwerk berekent digitale vingerafdruk voor een foto
 - Je kan een neuraal netwerk *trainen* door veel voorbeelden te geven van foto's van dezelfde en verschillende voorwerpen
-- Nauwkeurigheid van het neuraal netwerk kunnen we meten met de mAP
 
 ---
 
@@ -167,6 +151,7 @@ Tabel Waldek
 # Resultaten
 
 - mAP verbetert van 44.6% naar 59.1% als we maar 3 van de 29 kinderen kennen
+- Merk op: als maatstaf gebruiken we de *mean Average Precision*. Als voor iedere zoekfoto de juiste voorbeeldfoto's de meest gelijkaardige vingerafdrukken van alle voorbeeldfoto's hebben, is de mAP gelijk aan 100%. Als die het minst gelijkaardig zijn, is de mAP 0%.
 
 ---
 
@@ -206,7 +191,7 @@ Tabel Waldek
 - Een foto van een winkelrek moet eerst door het lokalisatie-netwerk, en vervolgens worden alle producten uitgesneden en door het herkenningsnetwerk gehaald
 - Voor een foto van 150 producten (toon voorbeeld) kan dit maar liefst 15 seconden duren
 - Om dit te versnellen, willen we de twee netwerken versmelten tot één neuraal netwerk
-- Dit netwerk geeft meteen de locaties als een digitale vingerafdruk voor ieder product
+- Dit netwerk geeft zowel de locaties als een digitale vingerafdruk voor ieder product
 - Als we beide netwerken bijna volledig versmelten, is de lokalisatie en herkenning veel sneller, maar de mAP wordt ook veel slechter, helaas
 - Door de netwerken in mindere mate te versmelten, kunnen we een beter compromis vinden tussen duurtijd en nauwkeurigheid
 
