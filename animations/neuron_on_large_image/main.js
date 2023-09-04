@@ -19,19 +19,19 @@ const idxsToRGB = (values) => values.map(ch => ch.map((row, i) =>
         return idxToRGB(values[0][i][j], values[1][i][j], values[2][i][j]);
     })
 ));
+export idxToRGB;
 const monoIdxsToRGB = (values) => values.map((row, i) =>
     row.map((val, j) => {
         return idxToRGB(val, val, val);
     })
 );
+export monoIdxsToRGB;
 const idxsToValues = rgb_idxs => rgb_idxs.map(monoIdxsToValues);
+export idxsToValues;
 const monoIdxsToValues = ch_idxs => ch_idxs.map(row => row.map(idx => idx / 100));
+export monoIdxsToValues;
 
 
-
-function setHexOpacity(hexColorString, opacity) {
-    return `${hexColorString.substr(0, 7)}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`;
-}
 
 function getNeuronGroup({
     depth = 100,
@@ -97,11 +97,6 @@ function getNeuronGroup({
     group.add(actGroup);
 
     return group;
-}
-
-
-function sliceMatrix(matrix, rowStart, rowEnd, colStart, colEnd) {
-    return matrix.slice(rowStart, rowEnd).map(i => i.slice(colStart, colEnd));
 }
 
 

@@ -15,8 +15,6 @@ export class PixelTable {
 
     #cellSize;
     #cellStyle;
-    #cellDepth
-
     #size;
 
     #group;
@@ -25,14 +23,15 @@ export class PixelTable {
     #numPixelsShown;
 
     #channelDepth;
+    #channelMargin;
     constructor ({
         values, colors,
         cellSize, 
         numPixelsShown = null,
         strokeWidth=0,
         channelToColor=(ch, numCh) => `hsl(${ch*360/numCh}, 100%, ${numCh === 1 ? 100 : 50}%)`,
-        cellDepth=cellSize,
         channelDepth=cellSize,
+        channelMargin=0,
         precision=2,
         fillOpacity=1.0,
         fontColor='black',
@@ -45,7 +44,7 @@ export class PixelTable {
         this.#colors = colors;
         this.#precision = precision;
         this.#cellSize = cellSize;
-        this.#cellDepth = cellDepth;
+        this.#channelDepth = channelDepth;
         this.#cellStyle = {
             fillOpacity,
             strokeWidth,
@@ -56,6 +55,7 @@ export class PixelTable {
             bgColor,
         }
         this.#numPixelsShown = numPixelsShown === null ? this.numCols * this.numRows : numPixelsShown;
+        this.#channelMargin = channelMargin;
 
         this.channelToColor = channelToColor;
 
@@ -91,6 +91,8 @@ export class PixelTable {
                 colors: incomplColors, values: incomplValues,
                 cellSize: this.#cellSize,
                 channelDepth: this.#channelDepth,
+                channelToColor: this.channelToColor,
+                channelMargin: this.#channelMargin,
                 ...this.#cellStyle,
             });
             this.incomplChannelMeshes.forEach((channelMesh, i) => {
@@ -116,21 +118,14 @@ export class PixelTable {
                 colors: complColors, values: complValues,
                 cellSize: this.#cellSize,
                 channelDepth: this.#channelDepth,
+                channelToColor: this.channelToColor,
+                channelMargin: this.#channelMargin,
                 ...this.#cellStyle,
             });
             this.complChannelMeshes.forEach((mesh, i) => {
                 this.#tables[i].add(mesh);
             });
         }
-    }
-
-    positionTables() {
-        let shiftZ = this.#cellDepth / 2;
-        this.#tables.forEach(table => {
-            table.group.position.z = shiftZ;
-            shiftZ += this.#cellDepth;
-        });
-        this.#size = new THREE.Box3().setFromObject(this.group).getSize(new THREE.Vector3())
     }
 
     get numChannels() {
@@ -182,7 +177,9 @@ export class PixelTable {
 
 function getChannelMeshes({
     colors, values, cellSize = 10,
+    channelToColor,
     channelDepth=cellSize,
+    channelMargin=0,
     strokeWidth=0,
     strokeColor='black',
     fontColor='black',
@@ -221,7 +218,7 @@ function getChannelMeshes({
         });
 
         const colorMaterial = new THREE.MeshBasicMaterial({
-            color: new THREE.Color(`hsl(${i*360/numChannels}, ${numChannels === 1 ? 0 : 100}%, 50%)`),
+            color: new THREE.Color(channelToColor(i, numChannels)),
         });
         const mesh = new THREE.Mesh(geometry, [
             colorMaterial,       // Right side
@@ -231,7 +228,7 @@ function getChannelMeshes({
             frontBackMaterial,   // Front side
             frontBackMaterial    // Back side
         ]);
-        mesh.position.z = - i * channelDepth;
+        mesh.position.z = - i * (channelDepth + channelMargin);
         return mesh;
     });
 }
