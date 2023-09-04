@@ -276,12 +276,12 @@ export function animatePaletteToTable({
                 x: dstCenter.x,
                 y: dstCenter.y,
                 z: dstCenter.z + 10,
-                duration: pixelFlyDuration,
+                duration: (paletteIdx > 3 || simultaneous) ? pixelFlyDuration : 2,
             }, label
             ).to(srcClone.scale, {
                 x: dstSize.x / srcSize.x,
                 y: dstSize.y / srcSize.y,
-                duration: pixelFlyDuration
+                duration: (paletteIdx > 3 || simultaneous) ? pixelFlyDuration : 2,
             }, label)
         });
     });

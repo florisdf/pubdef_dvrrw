@@ -6,6 +6,8 @@ import waldek from './waldek_the_gray.js';
 import GSDevTools from '../lib/gsap-shockingly-green/GSDevTools.js';
 import * as THREE from 'three';
 
+import capture from '../lib/capture.js';
+
 
 function getAnimationTimeline(sceneComps) {
     const scene = new THREE.Scene();
@@ -28,7 +30,7 @@ function getAnimationTimeline(sceneComps) {
 
     const container = document.getElementById('container');
     const renderer = new THREE.WebGLRenderer({antialias: true});
-    renderer.setPixelRatio(window.devicePixelRatio)
+    renderer.setPixelRatio(1);
     const renderEl = renderer.domElement;
     container.appendChild(renderEl);
     renderer.setSize(canvasWidth, canvasHeight);
@@ -74,25 +76,6 @@ function getAnimationTimeline(sceneComps) {
 }
 
 
-async function capture({
-    tl, canvas, framerate = 30,
-    motionBlurFrames = 5,
-}) {
-    const capturer = new CCapture({
-        format: 'webm', framerate, motionBlurFrames
-    });
-    capturer.start();
-
-    const nFrames = tl.duration() * framerate * motionBlurFrames;
-    for (let t = 0; t <= nFrames; t++) {
-        tl.progress(t / nFrames);
-        capturer.capture(canvas);
-        await new Promise(resolve => requestAnimationFrame(resolve));
-    }
-    capturer.stop();
-    capturer.save();
-}
-
 
 function main() {
     const stepSize = 15;
@@ -103,6 +86,7 @@ function main() {
 
     const {tl, canvas} = getAnimationTimeline(sceneComps);
 
+    // tl.play()
     capture({tl, canvas});
     // GSDevTools.create({animation: tl});
 }
