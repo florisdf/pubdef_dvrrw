@@ -46,7 +46,7 @@ function getAnimationTimeline(sceneCompsRed, sceneCompsGreen, sceneCompsBlue) {
     const container = document.getElementById('container');
 
     const renderer = new THREE.WebGLRenderer({antialias: true});
-    renderer.setPixelRatio(window.devicePixelRatio)
+    renderer.setPixelRatio(1)
     const canvas = renderer.domElement;
     container.appendChild(canvas);
     renderer.setSize(canvasWidth, canvasHeight);
