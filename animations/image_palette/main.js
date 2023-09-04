@@ -14,8 +14,8 @@ function getAnimationTimeline(sceneComps) {
     const {sceneGroup, numberTableGroup, paletteGroup} = sceneComps;
     scene.add(sceneGroup);
 
-    const canvasWidth = window.innerWidth;
-    const canvasHeight = window.innerHeight;
+    const canvasWidth = 1920;
+    const canvasHeight = 1080;
 
     const fov = 45;
     const camera = new THREE.PerspectiveCamera(fov, canvasWidth/canvasHeight, 1, 100000);
@@ -45,10 +45,7 @@ function getAnimationTimeline(sceneComps) {
         },
     });
 
-    //tl.to('#container', {
-    //    x: '+=0',
-    //    delay: 5,
-    //});
+    tl.add(() => {}, "+=1")
 
     const paletteGroupCenter = getObjectCenter(paletteGroup);
     tl.to(camera.position, {
@@ -71,6 +68,7 @@ function getAnimationTimeline(sceneComps) {
         simultaneous: false
     });
     tl.add(tlSub);
+    tl.add(() => {}, "+=1")
 
     return {tl, canvas: renderEl};
 }
