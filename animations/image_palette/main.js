@@ -2,13 +2,14 @@ import {
     getObjectCenter, getObjectSize,
     floatToGray, getNumberTableWithPalette, animatePaletteToTable
 } from './image_palette.js';
-import * as THREE from '../lib/three.module.js';
 import waldek from './waldek_the_gray.js';
 import GSDevTools from '../lib/gsap-shockingly-green/GSDevTools.js';
+import * as THREE from 'three';
 
 
 function getAnimationTimeline(sceneComps) {
     const scene = new THREE.Scene();
+    scene.background = new THREE.Color( 0xffffff );
 
     const {sceneGroup, numberTableGroup, paletteGroup} = sceneComps;
     scene.add(sceneGroup);
@@ -26,24 +27,28 @@ function getAnimationTimeline(sceneComps) {
     camera.position.y = tableCenter.y;
 
     const container = document.getElementById('container');
-    const renderer = new THREE.WebGLRenderer({alpha: true, antialias: true});
+    const renderer = new THREE.WebGLRenderer({antialias: true});
     renderer.setPixelRatio(window.devicePixelRatio)
     const renderEl = renderer.domElement;
     container.appendChild(renderEl);
     renderer.setSize(canvasWidth, canvasHeight);
+
     function render() {
         renderer.render(scene, camera);
     }
-    render()
 
     const tl = gsap.timeline({
-        delay: 5,
-        paused: true,
         onUpdate: render,
+        paused: true,
         defaults: {
             ease: "power2.inOut" 
         },
     });
+
+    //tl.to('#container', {
+    //    x: '+=0',
+    //    delay: 5,
+    //});
 
     const paletteGroupCenter = getObjectCenter(paletteGroup);
     tl.to(camera.position, {
@@ -67,7 +72,28 @@ function getAnimationTimeline(sceneComps) {
     });
     tl.add(tlSub);
 
-    return tl;
+    return {tl, canvas: renderEl};
+}
+
+
+async function capture({
+    tl, canvas, framerate = 30,
+    motionBlurFrames = 5,
+}) {
+    const capturer = new CCapture({
+        format: 'webm', framerate, motionBlurFrames
+    });
+    capturer.start();
+
+    const nFrames = tl.duration() * framerate * motionBlurFrames;
+
+    _.range(nFrames).forEach(i => {
+        tl.progress(i / nFrames);
+        capturer.capture(canvas);
+    })
+
+    capturer.stop();
+    capturer.save();
 }
 
 
@@ -78,9 +104,10 @@ function main() {
 
     const sceneComps = getNumberTableWithPalette(waldek, paletteTable, floatToGray)
 
-    const tl = getAnimationTimeline(sceneComps);
-    GSDevTools.create({animation: tl});
-    tl.play();
+    const {tl, canvas} = getAnimationTimeline(sceneComps);
+
+    capture({tl, canvas});
+    // GSDevTools.create({animation: tl});
 }
 
 window.addEventListener('load', function () {

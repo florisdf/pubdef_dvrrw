@@ -19,7 +19,7 @@ export function getSquareTextMesh(
         ctx.fillStyle = fillColor;
         ctx.fillRect(0, 0, size, size);
     }
-    ctx.font = `${fontSize} ${fontFamily}`;
+    ctx.font = `500 ${fontSize} ${fontFamily}`;
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillStyle = strokeColor;
@@ -182,7 +182,7 @@ export function getNumberTableWithPalette(idxTable, paletteTable, floatToColor) 
 
     const numbers = idxToNumber(idxTable, paletteTable.flat());
     const {group: numberTableGroup, meshes: numberTableMeshes} = getNumberTable(
-        numbers, cellSize, 3, 0, 0, 2
+        numbers, cellSize, 0, 0, 0, 2
     )
     const tableSize = getObjectSize(numberTableGroup);
 
