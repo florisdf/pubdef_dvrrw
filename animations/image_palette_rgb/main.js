@@ -14,7 +14,6 @@ import capture from '../lib/capture.js';
 
 function getAnimationTimeline(sceneCompsRed, sceneCompsGreen, sceneCompsBlue) {
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color( 0xffffff );
 
     const {sceneGroup: sceneGroupRed} = sceneCompsRed;
     const {sceneGroup: sceneGroupGreen} = sceneCompsGreen;
@@ -53,6 +52,7 @@ function getAnimationTimeline(sceneCompsRed, sceneCompsGreen, sceneCompsBlue) {
     function render() {
         renderer.render(scene, camera);
     }
+    renderer.setClearColor(0xffffff, 0);
     render()
 
     const tl = gsap.timeline({
@@ -130,6 +130,7 @@ function main() {
 
     const {tl, canvas} = getAnimationTimeline(sceneCompsRed, sceneCompsGreen, sceneCompsBlue);
     capture({tl, canvas});
+    // tl.play();
     // GSDevTools.create({animation: tl});
 }
 
