@@ -64,6 +64,8 @@ export class TableCell {
     #height;
 
     #style;
+    #opacity;
+    #depthWrite;
 
     #canvasTexture;
     #canvas;
@@ -79,10 +81,14 @@ export class TableCell {
         fontWeight='500',
         fontOpacity=1.0,
         bgColor=null,
+        opacity=1.0,
+        depthWrite=true,
     }) {
         this.#text = text;
         this.#width = width;
         this.#height = height;
+        this.#opacity = opacity;
+        this.#depthWrite = depthWrite;
 
         this.#style = {
             strokeWidth,
@@ -199,6 +205,22 @@ export class TableCell {
     updateStyle(style) {
         this.style = {...this.#style, ...style};
     }
+
+    get opacity() {
+        return this.#opacity;
+    }
+    set opacity(opacity) {
+        this.#opacity = opacity;
+        setOpacity(this.group, this.#opacity);
+    }
+
+    get depthWrite() {
+        return this.#depthWrite;
+    }
+    set depthWrite(depthWrite) {
+        this.#depthWrite = depthWrite;
+        setDepthWrite(this.group, this.#depthWrite);
+    }
 }
 
 
@@ -218,6 +240,7 @@ export class PixelTable {
 
     #group;
     #cells;
+    #opacity;
     constructor ({
         values, valueToColor,
         cellSize, strokeWidth,
@@ -231,11 +254,13 @@ export class PixelTable {
         strokeColor='black',
         fontSize=`${cellSize*.4}px`,
         bgColor='white',
+        opacity=1.0,
     }) {
         this.#values = values;
         this.#valueToColor = valueToColor;
         this.#precision = precision;
         this.#cellSize = cellSize;
+        this.#opacity = opacity;
         this.#cellStyle = {
             fillOpacity,
             strokeWidth,
@@ -312,6 +337,10 @@ export class PixelTable {
         return this.#size;
     }
 
+    get cells() {
+        return this.#cells;
+    }
+
     get cellStyle() {
         return this.#cellStyle;
     }
@@ -330,4 +359,34 @@ export class PixelTable {
     updateCellStyle(cellStyle) {
         this.cellStyle = {...this.#cellStyle, ...cellStyle};
     }
+
+    get opacity() {
+        return this.#opacity;
+    }
+    set opacity(opacity) {
+        this.#opacity = opacity;
+        setOpacity(this.group, this.#opacity);
+    }
 }
+
+
+export function setOpacity(obj, opacity) {
+    setMaterialProperty(obj, 'opacity', opacity);
+    setMaterialProperty(obj, 'transparent', true);
+};
+
+
+export function setDepthWrite(obj, depthWrite) {
+    setMaterialProperty(obj, 'depthWrite', depthWrite);
+};
+
+
+export function setMaterialProperty(obj, propName, propValue) {
+    obj.children.forEach(child => {
+        setMaterialProperty(child, propName, propValue);
+    });
+
+    if (obj.material) {
+        obj.material[propName] = propValue;
+    };
+};

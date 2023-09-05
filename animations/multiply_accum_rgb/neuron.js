@@ -30,13 +30,15 @@ export class Neuron {
     #macOutput;
     #output;
     #precision;
+    #strokeWidth;
     constructor({
-        input, weights, bias, color = 'rgb(0,64,122)',
+        input, weights, bias, color = '#123c75',
         actFunc = (out, bias) => out > bias ? 1.0 : 0.0,
         actFuncToStr = (bias) => `> ${bias} ?`,
         cellSize = 100, numberOpacity = 1.0,
         colorOpacity = 0.1, channelMargin = 100,
         opShift = 500, opBoxOpacity = 0.1, precision = 2,
+        strokeWidth = 0,
     }) {
         this.#input = input;
         this.#weights = weights;
@@ -57,6 +59,7 @@ export class Neuron {
         this.#channelMargin = channelMargin;
         this.#opShift = opShift;
         this.#precision = precision;
+        this.#strokeWidth = strokeWidth;
 
         this.#createComponents();
         this.updatePositions();
@@ -102,6 +105,9 @@ export class Neuron {
     get bias() {
         return this.#bias;
     }
+    get opShift() {
+        return this.#opShift;
+    }
 
     #computeProductOutput() {
         this.#productOutput = this.#input.map((ch, i) => elWiseProduct(ch, this.#weights[i]));
@@ -126,9 +132,6 @@ export class Neuron {
     }
     get tableSize() {
         return this.#input[0].length * this.#cellSize;
-    }
-    get strokeWidth() {
-        return this.numberOpacity * 3;
     }
 
     get numberOpacity() {
@@ -194,7 +197,7 @@ export class Neuron {
             values: this.#input,
             valueToColor,
             cellSize: this.#cellSize,
-            strokeWidth: this.strokeWidth,
+            strokeWidth: this.#strokeWidth,
             channelMargin: this.#channelMargin,
             fillOpacity: this.#colorOpacity,
             fontOpacity: this.#numberOpacity,
@@ -206,7 +209,7 @@ export class Neuron {
             values: this.#weights,
             valueToColor,
             cellSize: this.#cellSize,
-            strokeWidth: this.strokeWidth,
+            strokeWidth: this.#strokeWidth,
             channelMargin: this.#channelMargin,
             fillOpacity: this.#colorOpacity,
             fontOpacity: this.#numberOpacity,
@@ -219,7 +222,7 @@ export class Neuron {
             values: this.#productOutput,
             valueToColor,
             cellSize: this.#cellSize,
-            strokeWidth: this.strokeWidth,
+            strokeWidth: this.#strokeWidth,
             channelMargin: this.#channelMargin,
             fillOpacity: this.#colorOpacity,
             fontOpacity: this.#numberOpacity,
@@ -288,8 +291,8 @@ export class Neuron {
             text: this.#output.toFixed(this.#precision),
             width: this.#cellSize,
             height: this.#cellSize,
-            fillColor: this.outputFillColor,
-            fontColor: this.outputFontColor,
+            fillColor: 'white',
+            fontColor: 'black',
             fontOpacity: this.#numberOpacity,
         });
         this.#outputCell.group.name = 'output';
@@ -325,15 +328,6 @@ export class Neuron {
         this.#outputCell.group.position.y = this.#activationBox.group.position.y;
         this.#outputCell.group.position.z = this.#activationBox.group.position.z + actBoxSize.z;
         this.#outputCell.group.renderOrder = 5;
-    }
-
-    get outputFillColor() {
-        return `rgb(${uInt(this.#output)},${uInt(this.#output)},${uInt(this.#output)})`;
-    }
-
-    get outputFontColor() {
-        const invOut = this.#output < 0.3 ? 1 - this.#output : this.#output;
-        return `rgb(${uInt(invOut)},${uInt(invOut)},${uInt(invOut)})`;
     }
 }
 
