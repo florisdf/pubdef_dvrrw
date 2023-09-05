@@ -1,14 +1,14 @@
 import { idxToNumber, } from '../image_palette/image_palette.js';
-import ghostIdxsRed from '../multiply_accum_gray/cyan_ghost_red.js';
-import ghostIdxsGreen from '../multiply_accum_gray/cyan_ghost_green.js';
-import ghostIdxsBlue from '../multiply_accum_gray/cyan_ghost_blue.js';
+import ghostIdxsRed from './cyan_ghost_red.js';
+import ghostIdxsGreen from './cyan_ghost_green.js';
+import ghostIdxsBlue from './cyan_ghost_blue.js';
 import populatedMaze from './populated_maze.js';
 import outputIdxs from './output.js';
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-import { OperandBox } from '../multiply_accum_gray/operand_box.js';
+import { OperandBox } from '../multiply_accum_rgb/operand_box.js';
 import { PixelTable } from './pixel_tables.js';
 
 
@@ -19,17 +19,13 @@ const idxsToRGB = (values) => values.map(ch => ch.map((row, i) =>
         return idxToRGB(values[0][i][j], values[1][i][j], values[2][i][j]);
     })
 ));
-export idxToRGB;
 const monoIdxsToRGB = (values) => values.map((row, i) =>
     row.map((val, j) => {
         return idxToRGB(val, val, val);
     })
 );
-export monoIdxsToRGB;
 const idxsToValues = rgb_idxs => rgb_idxs.map(monoIdxsToValues);
-export idxsToValues;
 const monoIdxsToValues = ch_idxs => ch_idxs.map(row => row.map(idx => idx / 100));
-export monoIdxsToValues;
 
 
 
