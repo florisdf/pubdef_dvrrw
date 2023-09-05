@@ -1,6 +1,10 @@
 import { idxToNumber } from '../image_palette/image_palette.js';
-import ghostIdxsGray from './ghost_gray.js';
-import pacmanIdxsGray from './pacman_gray.js';
+import ghostIdxsRed from './cyan_ghost_red.js';
+import ghostIdxsGreen from './cyan_ghost_green.js';
+import ghostIdxsBlue from './cyan_ghost_blue.js';
+import pacmanIdxsRed from './pacman_red.js';
+import pacmanIdxsGreen from './pacman_green.js';
+import pacmanIdxsBlue from './pacman_blue.js';
 
 import { Neuron } from '../multiply_accum_rgb/neuron.js';
 import { setDepthWrite } from '../multiply_accum_rgb/pixel_tables.js';
@@ -11,25 +15,33 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 const maxValue = 100;
 const palette = _.range(0, maxValue + 1).map(x => x/maxValue);
-const ghostNumbersGray = idxToNumber(ghostIdxsGray, palette);
-const pacmanNumbersGray = idxToNumber(pacmanIdxsGray, palette);
+
+const ghostNumbersRed = idxToNumber(ghostIdxsRed, palette);
+const ghostNumbersGreen = idxToNumber(ghostIdxsGreen, palette);
+const ghostNumbersBlue = idxToNumber(ghostIdxsBlue, palette);
+const ghostNumbersRGB = [ghostNumbersRed, ghostNumbersGreen, ghostNumbersBlue];
+
+const pacmanNumbersRed = idxToNumber(pacmanIdxsRed, palette);
+const pacmanNumbersGreen = idxToNumber(pacmanIdxsGreen, palette);
+const pacmanNumbersBlue = idxToNumber(pacmanIdxsBlue, palette);
+const pacmanNumbersRGB = [pacmanNumbersRed, pacmanNumbersGreen, pacmanNumbersBlue];
 
 
 function getAnimationTimeline() {
     // Create scene
     const neuronGhost = new Neuron({
-        input: [ghostNumbersGray],
-        weights: [ghostNumbersGray],
-        bias: 30,
+        input: ghostNumbersRGB,
+        weights: ghostNumbersRGB,
+        bias: 50,
         opShift: 1000,
         colorOpacity: 1.0,
         numberOpacity: 0.0,
     });
 
     const neuronPacMan = new Neuron({
-        input: [pacmanNumbersGray],
-        weights: [ghostNumbersGray],
-        bias: 30,
+        input: pacmanNumbersRGB,
+        weights: ghostNumbersRGB,
+        bias: 50,
         opShift: 1000,
         colorOpacity: 1.0,
         numberOpacity: 0.0,
@@ -189,6 +201,14 @@ function getAnimationTimeline() {
         yoyo: true,
         repeat: 1,
     }, '<');
+
+    tl.add(() => {}, '+=3')
+
+    // Move channels over each other
+    tl.to([neuronGhost, neuronPacMan], {
+        channelMargin: -tableSize,
+        duration: 2,
+    })
 
     tl.add(() => {}, '+=1');
     return {tl, canvas};

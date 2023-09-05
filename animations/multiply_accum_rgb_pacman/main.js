@@ -2,9 +2,12 @@ import { idxToNumber } from '../image_palette/image_palette.js';
 import ghostIdxsRed from './cyan_ghost_red.js';
 import ghostIdxsGreen from './cyan_ghost_green.js';
 import ghostIdxsBlue from './cyan_ghost_blue.js';
+import pacmanIdxsRed from './pacman_red.js';
+import pacmanIdxsGreen from './pacman_green.js';
+import pacmanIdxsBlue from './pacman_blue.js';
 
-import { Neuron } from './neuron.js';
-import { setDepthWrite } from './pixel_tables.js';
+import { Neuron } from '../multiply_accum_rgb/neuron.js';
+import { setDepthWrite } from '../multiply_accum_rgb/pixel_tables.js';
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -268,7 +271,12 @@ function main() {
     const ghostNumbersBlue = idxToNumber(ghostIdxsBlue, palette);
     const ghostNumbersRGB = [ghostNumbersRed, ghostNumbersGreen, ghostNumbersBlue];
 
-    const inputNumbers = ghostNumbersRGB;
+    const pacmanNumbersRed = idxToNumber(pacmanIdxsRed, palette);
+    const pacmanNumbersGreen = idxToNumber(pacmanIdxsGreen, palette);
+    const pacmanNumbersBlue = idxToNumber(pacmanIdxsBlue, palette);
+    const pacmanNumbersRGB = [pacmanNumbersRed, pacmanNumbersGreen, pacmanNumbersBlue];
+
+    const inputNumbers = pacmanNumbersRGB;
     const weightNumbers = ghostNumbersRGB;
 
     const tl = getAnimationTimeline(getGhostSceneComps(inputNumbers, weightNumbers));
