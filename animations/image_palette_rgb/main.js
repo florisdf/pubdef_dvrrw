@@ -14,6 +14,7 @@ import capture from '../lib/capture.js';
 
 function getAnimationTimeline(sceneCompsRed, sceneCompsGreen, sceneCompsBlue) {
     const scene = new THREE.Scene();
+    scene.background = new THREE.Color( 0xffffff );
 
     const {sceneGroup: sceneGroupRed} = sceneCompsRed;
     const {sceneGroup: sceneGroupGreen} = sceneCompsGreen;
@@ -64,19 +65,22 @@ function getAnimationTimeline(sceneCompsRed, sceneCompsGreen, sceneCompsBlue) {
     });
 
     tl.add(() => {}, "+=1")
+
+    let duration = 2;
+    let delay = 2;
     const allSceneComps = [sceneCompsRed, sceneCompsGreen, sceneCompsBlue];
     const meshCloneGroups = [];
     allSceneComps.forEach((sceneComps, i, arr) =>  {
         const {tl: tlSub, meshCloneGroup} = animatePaletteToTable({
             scene: scene,
-            pixelFlyDuration: 3,
+            pixelFlyDuration: duration,
             ...sceneComps
         });
         if (i < arr.length - 1) {
             tlSub.to(camera.position, {
                 y: `-=${sceneShiftY}`,
-                duration: 2,
-                delay: 2,
+                duration,
+                delay,
             })
         }
         meshCloneGroups.push(meshCloneGroup);
@@ -89,28 +93,40 @@ function getAnimationTimeline(sceneCompsRed, sceneCompsGreen, sceneCompsBlue) {
         x: sceneCenterGreen.x,
         y: sceneCenterGreen.y,
         z: "+=13000",
-        duration: 2,
+        duration,
         onStart: () => {
             allSceneComps.forEach(({numberTableGroup, paletteColorMeshes}, i) =>  {
-                numberTableGroup.removeFromParent();
-                paletteColorMeshes.flat().forEach(mesh => {
+                const blackMaterial = new THREE.MeshBasicMaterial({
+                    color: 0x000000
+                });
+                numberTableGroup.children.forEach(mesh => {
+                    mesh.material = blackMaterial;
+                    mesh.renderOrder = 0;
+                });
+                meshCloneGroups[i].children.forEach(mesh => {
+                    mesh.material = mesh.material.clone();
                     mesh.material.blending = THREE.AdditiveBlending;
+                    mesh.material.depthWrite = false;
+                    mesh.material.transparent = true;
+                    mesh.renderOrder = 10;
                 });
             });
         },
     })
 
+    duration = 3;
+    delay = 3;
     tl.to(
-        meshCloneGroups[0].position, {
+        [meshCloneGroups[0].position, allSceneComps[0].numberTableGroup.position], {
             y: `-=${sceneShiftY}`,
-            duration: 3,
-            delay: 3,
+            duration,
+            delay,
         }, 'meshOverlap'
     ).to(
-        meshCloneGroups[2].position, {
+        [meshCloneGroups[2].position, allSceneComps[2].numberTableGroup.position], {
             y: `+=${sceneShiftY}`,
-            duration: 3,
-            delay: 3,
+            duration,
+            delay,
         }, 'meshOverlap'
     )
     tl.add(() => {}, "+=1")
@@ -129,8 +145,8 @@ function main() {
     const sceneCompsBlue = getNumberTableWithPalette(waldek_blue, paletteTable, floatToBlue)
 
     const {tl, canvas} = getAnimationTimeline(sceneCompsRed, sceneCompsGreen, sceneCompsBlue);
-    capture({tl, canvas});
-    // tl.play();
+    //capture({tl, canvas});
+    tl.play();
     // GSDevTools.create({animation: tl});
 }
 
