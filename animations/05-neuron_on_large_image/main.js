@@ -13,6 +13,8 @@ import { setOpacity } from '../03a-multiply_accum_rgb/pixel_tables.js';
 import { OperandBox } from '../03a-multiply_accum_rgb/operand_box.js';
 import { PixelTable } from './pixel_tables.js';
 
+import capture from '../lib/capture.js';
+
 
 const toUInt = x => Math.round(x * 255 / 100);
 const idxToRGB = (r, g, b) => `rgb(${toUInt(r)}, ${toUInt(g)}, ${toUInt(b)})`;
@@ -377,5 +379,7 @@ function main() {
 window.addEventListener('load', function () {
     const {tl, canvas} = main();
 
-    tl.play();
+    // tl.play();
+    const name = window.location.pathname.split('/').slice(-2)[0];
+    capture({tl, canvas, name});
 })

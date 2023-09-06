@@ -10,7 +10,7 @@ import capture from '../lib/capture.js';
 
 function getNeuronGroup({
     blockShift = 100,
-    color = 'darkblue',
+    color = '#123c75',
     size = 180,
     kernelSize = 9,
     opacity = 0.2,
