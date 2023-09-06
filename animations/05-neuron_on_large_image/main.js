@@ -154,7 +154,7 @@ function main() {
 
     // Render
     const container = document.getElementById('container');
-    const renderer = new THREE.WebGLRenderer({alpha: true, antialias: false});
+    const renderer = new THREE.WebGLRenderer({alpha: true, antialias: true});
     renderer.setPixelRatio(window.devicePixelRatio)
     const renderEl = renderer.domElement;
     container.appendChild(renderEl);
