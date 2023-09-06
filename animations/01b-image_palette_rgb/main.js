@@ -2,7 +2,7 @@ import {
     getObjectCenter, getObjectSize,
     floatToRed, floatToGreen, floatToBlue,
     getNumberTableWithPalette, animatePaletteToTable
-} from '../image_palette/image_palette.js';
+} from '../01a-image_palette/image_palette.js';
 import * as THREE from 'three';
 import waldek_red from './waldek_the_red.js';
 import waldek_green from './waldek_the_green.js';

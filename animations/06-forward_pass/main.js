@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-import { OperandBox } from '../multiply_accum_gray/operand_box.js';
-import { PixelTable } from '../neuron_on_large_image/pixel_tables.js';
+import { OperandBox } from '../03a-multiply_accum_rgbmultiply_accum_gray/operand_box.js';
+import { PixelTable } from '../04-neuron_on_large_image/pixel_tables.js';
 
 import conv1 from './activations/conv1.js';
 import layer1 from './activations/layer1.js';
@@ -109,7 +109,7 @@ function main() {
 
     // Render
     const container = document.getElementById('container');
-    const renderer = new THREE.WebGLRenderer({alpha: true, antialias: false});
+    const renderer = new THREE.WebGLRenderer({alpha: true, antialias: true});
     renderer.setPixelRatio(window.devicePixelRatio)
     const renderEl = renderer.domElement;
     container.appendChild(renderEl);

@@ -167,6 +167,10 @@ export class OperandBox {
         this.updateOperandPosition()
     }
 
+    set depth(depth) {
+        this.#depth = depth;
+        this.updateFrustumGeometry();
+    }
     set startWidth(startWidth) {
         this.#startWidth = startWidth;
         this.updateFrustumGeometry();
