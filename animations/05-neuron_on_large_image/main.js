@@ -240,6 +240,7 @@ function main() {
     const tl = gsap.timeline({
         delay: 2,
         onUpdate: render,
+        paused: true,
         // onComplete: animateControl,
         defaults: {
             ease: "power2.inOut" 
