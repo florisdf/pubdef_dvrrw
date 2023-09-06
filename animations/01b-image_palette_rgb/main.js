@@ -146,7 +146,8 @@ function main() {
     const sceneCompsBlue = getNumberTableWithPalette(waldek_blue, paletteTable, floatToBlue)
 
     const {tl, canvas} = getAnimationTimeline(sceneCompsRed, sceneCompsGreen, sceneCompsBlue);
-    capture({tl, canvas});
+    const name = window.location.pathname.split('/').slice(-2)[0];
+    capture({tl, canvas, name});
     // tl.play();
     // GSDevTools.create({animation: tl});
 }
