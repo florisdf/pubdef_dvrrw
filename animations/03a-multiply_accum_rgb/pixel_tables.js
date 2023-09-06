@@ -370,8 +370,8 @@ export class PixelTable {
 
 
 export function setOpacity(obj, opacity) {
-    setMaterialProperty(obj, 'opacity', opacity);
     setMaterialProperty(obj, 'transparent', true);
+    setMaterialProperty(obj, 'opacity', opacity);
 };
 
 
@@ -385,7 +385,11 @@ export function setMaterialProperty(obj, propName, propValue) {
         setMaterialProperty(child, propName, propValue);
     });
 
-    if (obj.material) {
+    if (Array.isArray(obj.material)) {
+        obj.material.forEach(mat => {
+            mat[propName] = propValue;
+        });
+    } else if (obj.material) {
         obj.material[propName] = propValue;
     };
 };

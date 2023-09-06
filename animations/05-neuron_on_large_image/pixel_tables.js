@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 
+import { setOpacity } from '../03a-multiply_accum_rgb/pixel_tables.js';
+
 
 function setHexOpacity(hexColorString, opacity) {
     return `${hexColorString.substr(0, 7)}${Math.round(opacity * 255).toString(16).padStart(2, '0')}`;
@@ -23,13 +25,15 @@ export class PixelTable {
 
     #channelDepth;
     #channelMargin;
+
+    #opacity;
     constructor ({
         values, colors,
         cellSize, 
         numPixelsShown = null,
         strokeWidth=0,
         channelToColor=(ch, numCh) => `hsl(${ch*360/numCh}, 100%, ${numCh === 1 ? 100 : 50}%)`,
-        channelDepth=cellSize,
+        channelDepth=cellSize/10,
         channelMargin=0,
         precision=2,
         fillOpacity=1.0,
@@ -38,6 +42,7 @@ export class PixelTable {
         strokeColor='black',
         fontSize=`${cellSize*.4}px`,
         bgColor='white',
+        opacity=1.0,
     }) {
         this.#values = values;
         this.#colors = colors;
@@ -55,6 +60,7 @@ export class PixelTable {
         }
         this.#numPixelsShown = numPixelsShown === null ? this.numCols * this.numRows : numPixelsShown;
         this.#channelMargin = channelMargin;
+        this.#opacity = opacity;
 
         this.channelToColor = channelToColor;
 
@@ -101,6 +107,14 @@ export class PixelTable {
         }
     }
 
+    get opacity() {
+        return this.#opacity;
+    }
+    set opacity(opacity) {
+        this.#opacity = opacity;
+        setOpacity(this.group, this.#opacity);
+    }
+
     updateComplGroup() {
         this.complChannelMeshes.forEach(mesh => mesh.removeFromParent());
 
@@ -125,6 +139,11 @@ export class PixelTable {
                 this.#tables[i].add(mesh);
             });
         }
+    }
+
+    update() {
+        this.updateComplGroup();
+        this.updateIncomplGroup();
     }
 
     get numChannels() {
@@ -187,7 +206,7 @@ function getChannelMeshes({
     fontFamily='Quicksand',
     fontWeight='500',
     fontOpacity=1.0,
-    bgColor='white',
+    bgColor=null,
 }) {
     const numChannels = values.length;
     return _.range(numChannels).map(i => {
@@ -225,7 +244,7 @@ function getChannelMeshes({
             colorMaterial,       // Top side
             colorMaterial,       // Bottom side
             frontBackMaterial,   // Front side
-            frontBackMaterial    // Back side
+            colorMaterial    // Back side
         ]);
         mesh.position.z = - i * (channelDepth + channelMargin);
         return mesh;
@@ -244,7 +263,7 @@ function drawImageOnCanvas({
     fontFamily='Quicksand',
     fontWeight='500',
     fontOpacity=1.0,
-    bgColor='white',
+    bgColor=null,
 }) {
     const imWidth = colors[0].length;
     const imHeight = colors.length;
