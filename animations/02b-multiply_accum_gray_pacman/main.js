@@ -8,6 +8,8 @@ import { setDepthWrite } from '../03a-multiply_accum_rgb/pixel_tables.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+import capture from '../lib/capture.js';
+
 
 function getAnimationTimeline({
     neuron, scene
@@ -47,8 +49,8 @@ function getAnimationTimeline({
     const container = document.getElementById('container');
     const renderer = new THREE.WebGLRenderer({alpha: true, antialias: true});
     renderer.setPixelRatio(1);
-    const renderEl = renderer.domElement;
-    container.appendChild(renderEl);
+    const canvas = renderer.domElement;
+    container.appendChild(canvas);
     renderer.setSize(canvasWidth, canvasHeight);
 
     function render() {
@@ -66,7 +68,7 @@ function getAnimationTimeline({
         controls.update()
         requestAnimationFrame(animateControl);
     }
-    // const controls = new OrbitControls(camera, renderEl);
+    // const controls = new OrbitControls(camera, canvas);
     // animateControl();
 
     // Animate
@@ -210,7 +212,9 @@ function getAnimationTimeline({
         repeatDelay: 5,
     }, '<')
 
-    return tl;
+    tl.add(() => {}, '+=1');
+
+    return {tl, canvas};
 }
 
 
@@ -252,8 +256,10 @@ function main() {
     const inputNumbers = [pacmanNumbersGray];
     const weightNumbers = [ghostNumbersGray];
 
-    const tl = getAnimationTimeline(getGhostSceneComps(inputNumbers, weightNumbers));
-    tl.play();
+    const {tl, canvas} = getAnimationTimeline(getGhostSceneComps(inputNumbers, weightNumbers));
+
+    // tl.play();
+    capture({tl, canvas});
 }
 
 window.addEventListener('load', function () {

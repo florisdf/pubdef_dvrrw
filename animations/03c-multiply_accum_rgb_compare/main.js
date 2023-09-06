@@ -12,6 +12,8 @@ import { setDepthWrite } from '../03a-multiply_accum_rgb/pixel_tables.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+import capture from '../lib/capture.js';
+
 
 const maxValue = 100;
 const palette = _.range(0, maxValue + 1).map(x => x/maxValue);
@@ -217,5 +219,6 @@ function getAnimationTimeline() {
 
 window.addEventListener('load', function () {
     const {tl, canvas} = getAnimationTimeline();
-    tl.play();
+    // tl.play();
+    capture({tl, canvas});
 })

@@ -5,6 +5,9 @@ import { OperandBox } from '../03a-multiply_accum_rgb/operand_box.js';
 import { EmptyTable } from './empty_table.js';
 
 
+import capture from '../lib/capture.js';
+
+
 function getNeuronGroup({
     blockShift = 100,
     color = 'darkblue',
@@ -266,5 +269,6 @@ function main() {
 
 window.addEventListener('load', function () {
     const {tl, canvas} = main();
-    tl.play();
+    // tl.play();
+    capture({tl, canvas});
 })
