@@ -76,50 +76,13 @@ function main() {
     const neuronBlockShift = size;
     const channelMargin = 100;
 
-    const inputTable = new EmptyTable({
-        cellSize: size / kernelSize,
-        numRows: kernelSize,
-    });
-
-    const inputTable2 = new EmptyTable({
-        cellSize: size / kernelSize,
-        numRows: kernelSize,
-    });
-    inputTable2.group.position.y -= size + channelMargin;
-
-    const inputTable3 = new EmptyTable({
-        cellSize: size / kernelSize,
-        numRows: kernelSize,
-    });
-    inputTable3.group.position.y -= 2*(size + channelMargin);
-
-    scene.add(inputTable.group);
-    scene.add(inputTable2.group);
-    scene.add(inputTable3.group);
-
     const weightTable = new EmptyTable({
         cellSize: size / kernelSize,
         numRows: kernelSize,
+        strokeColor: '#123c75',
     });
-
-    const weightTable2 = new EmptyTable({
-        cellSize: size / kernelSize,
-        numRows: kernelSize,
-    });
-    weightTable2.group.position.y -= size + channelMargin;
-
-    const weightTable3 = new EmptyTable({
-        cellSize: size / kernelSize,
-        numRows: kernelSize,
-    });
-    weightTable3.group.position.y -= 2*(size + channelMargin);
-
     scene.add(weightTable.group);
-    scene.add(weightTable2.group);
-    scene.add(weightTable3.group);
     weightTable.group.position.z = neuronBlockShift;
-    weightTable2.group.position.z = neuronBlockShift;
-    weightTable3.group.position.z = neuronBlockShift;
 
     const {
         neuronGroup, actBox,
@@ -145,16 +108,16 @@ function main() {
     const canvasWidth = 1920;
     const canvasHeight = 1080;
 
-    const fov = 45;
-    const camera = new THREE.PerspectiveCamera(fov, canvasWidth/canvasHeight, 1, 100000);
-    // const cameraWidth = 7*size;
-    // const cameraHeight = cameraWidth * canvasHeight / canvasWidth;
-    // const camera = new THREE.OrthographicCamera(0, cameraWidth, 0, cameraHeight, 1, 100000);
+    // const fov = 45;
+    // const camera = new THREE.PerspectiveCamera(fov, canvasWidth/canvasHeight, 1, 100000);
+    const cameraWidth = 6*neuronSize.x;
+    const cameraHeight = cameraWidth * canvasHeight / canvasWidth;
+    const camera = new THREE.OrthographicCamera(-cameraWidth/2, cameraWidth/2, cameraHeight/2, -cameraHeight/2, 1, 100000);
 
-    camera.position.x = -4700;
-    camera.position.y = eqCenter.y + 1000;
-    camera.position.z = eqCenter.z;
-    camera.lookAt(eqCenter);
+    camera.position.x = -1000;
+    camera.position.y = neuronCenter.y + 1000;
+    camera.position.z = neuronCenter.z + 1000;
+    camera.lookAt(neuronCenter);
 
     // Render
     const container = document.getElementById('container');
@@ -185,13 +148,14 @@ function main() {
         },
         paused: true,
     });
+    tl.add(() => {}, '+=0.1')
 
     return {tl, canvas};
 }
 
 window.addEventListener('load', function () {
     const {tl, canvas} = main();
-    tl.play();
-    // const name = window.location.pathname.split('/').slice(-2)[0];
-    // capture({tl, canvas, name});
+    // tl.play();
+    const name = window.location.pathname.split('/').slice(-2)[0];
+    capture({tl, canvas, name});
 })
