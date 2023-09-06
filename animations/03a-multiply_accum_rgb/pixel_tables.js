@@ -1,4 +1,3 @@
-import { getObjectSize } from '../image_palette/image_palette.js';
 import * as THREE from 'three';
 
 

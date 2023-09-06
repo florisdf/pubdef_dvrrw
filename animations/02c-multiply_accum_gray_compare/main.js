@@ -1,9 +1,9 @@
-import { idxToNumber } from '../image_palette/image_palette.js';
+import { idxToNumber } from '../01a-image_palette/image_palette.js';
 import ghostIdxsGray from './ghost_gray.js';
 import pacmanIdxsGray from './pacman_gray.js';
 
-import { Neuron } from '../multiply_accum_rgb/neuron.js';
-import { setDepthWrite } from '../multiply_accum_rgb/pixel_tables.js';
+import { Neuron } from '../03a-multiply_accum_rgb/neuron.js';
+import { setDepthWrite } from '../03a-multiply_accum_rgb/pixel_tables.js';
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';

@@ -1,9 +1,13 @@
-import { idxToNumber } from '../image_palette/image_palette.js';
-import ghostIdxsGray from './ghost_gray.js';
-import pacmanIdxsGray from './pacman_gray.js';
+import { idxToNumber } from '../01a-image_palette/image_palette.js';
+import ghostIdxsRed from './cyan_ghost_red.js';
+import ghostIdxsGreen from './cyan_ghost_green.js';
+import ghostIdxsBlue from './cyan_ghost_blue.js';
+import pacmanIdxsRed from './pacman_red.js';
+import pacmanIdxsGreen from './pacman_green.js';
+import pacmanIdxsBlue from './pacman_blue.js';
 
-import { Neuron } from '../multiply_accum_rgb/neuron.js';
-import { setDepthWrite } from '../multiply_accum_rgb/pixel_tables.js';
+import { Neuron } from '../03a-multiply_accum_rgb/neuron.js';
+import { setDepthWrite } from '../03a-multiply_accum_rgb/pixel_tables.js';
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -13,6 +17,9 @@ function getAnimationTimeline({
     neuron, scene
 }) {
     const productGroup = neuron.productTable.group;
+    const productGroupBbox = new THREE.Box3().setFromObject(productGroup);
+    const productGroupCenter = productGroupBbox.getCenter(new THREE.Vector3());
+
     const inputGroup = neuron.inputTable.group;
     const weightsGroup = neuron.weightsTable.group;
     const tableSize = neuron.tableSize;
@@ -37,9 +44,9 @@ function getAnimationTimeline({
     const fov = 45;
     const camera = new THREE.PerspectiveCamera(fov, canvasWidth/canvasHeight, 1, 100000);
 
-    camera.position.x = tableSize/2;
-    camera.position.y = -tableSize/2;
-    camera.position.z = 2000;
+    camera.position.x = productGroupCenter.x;
+    camera.position.y = productGroupCenter.y;
+    camera.position.z = 2300;
 
     // camera.lookAt(new THREE.Vector3(tableSize/2, -tableSize/2, productGroup.position.z));
 
@@ -89,36 +96,37 @@ function getAnimationTimeline({
 
     tl.add(() => {}, '+=1');
 
-    tl.to(neuron, {
-        colorOpacity: 0.0,
-        numberOpacity: 1.0,
-        yoyo: true,
-        repeat: 1,
-        duration: moderate,
-    });
+    // Move RGB channels apart
+    tl.from([neuron.inputTable, neuron.weightsTable, neuron.productTable], {
+        channelMargin: -tableSize,
+        duration: 2,
+    }).from(camera.position, {
+        x: tableSize / 2,
+        duration: 2,
+    }, '<');
 
-    tl.from(neuron.weightsTable, {
-        opacity: 0,
-        duration: moderate,
-    })
-        .from(neuron.weightsTable.group.position, {
-            z: neuron.inputTable.group.position.z,
-            x: neuron.inputTable.group.position.x + tableSize + 100,
-            duration: slow,
-        }, '<')
-        .to(camera.position, {
+    // Bring in weights and move camera to side
+    tl.to(camera.position, {
             x: -2000,
             z: 2500,
             duration: slow,
             onUpdate: () => {
                 camera.lookAt(
                     new THREE.Vector3(
-                        tableSize/2,
-                        -tableSize/2,
-                        (inputGroup.position.z + weightsGroup.position.z)/2
+                        productGroupCenter.x,
+                        productGroupCenter.y,
+                        inputGroup.position.z
                     )
                 );
             },
+        })
+        .from(neuron.weightsTable, {
+            opacity: 0,
+            duration: moderate,
+        })
+        .from(neuron.weightsTable.group.position, {
+            z: '+=5000',
+            duration: slow,
         }, '<')
         .to(neuron, {
             colorOpacity: 0.5,
@@ -141,62 +149,73 @@ function getAnimationTimeline({
             delay: fast,
         }, '<')
 
-    const productCells = neuron.productTable.cells[0].flat();
-    tl.from(productCells[0], {
-        opacity: 0,
-        duration: fast,
+    // Slide product and equals boxes over image cells
+    neuron.productTable.cells.forEach((channelCells, channelIdx) => {
+        const productCells = channelCells.flat();
+        tl.from(productCells[0], {
+            opacity: 0,
+            duration: fast,
+        }, 'cell0');
+
+        productCells.slice(1).forEach((cell, idx) => {
+            idx++;
+            const  numRows = neuron.productTable.cells[0].length;
+            const numCols = neuron.productTable.cells[0][0].length;
+            const row = Math.floor(idx / numCols);
+            const col = idx % numCols;
+
+            const duration = 0.05;
+            tl.to([neuron.productBoxes[channelIdx], neuron.equalsBoxes[channelIdx]].map(box => box.group.position), {
+                x: col === 0 ? `-=${tableSize - cellSize}` : `+=${cellSize}`,
+                y: - row * cellSize,
+                duration,
+            }, `cell${idx}`)
+                .from(cell, {
+                    opacity: 0,
+                    depthWrite: false,
+                    duration: duration / 2,
+                }, `cell${idx}+=100%`);
+        });
     });
 
-    productCells.slice(1).forEach((cell, idx) => {
-        idx++;
-        const  numRows = neuron.productTable.cells[0].length;
-        const numCols = neuron.productTable.cells[0][0].length;
-        const row = Math.floor(idx / numCols);
-        const col = idx % numCols;
-
-        const duration = 0.05;
-        tl.to([...neuron.productBoxes, ...neuron.equalsBoxes].map(box => box.group.position), {
-            x: col * cellSize,
-            y: - row * cellSize,
-            duration,
-        })
-            .from(cell, {
-                opacity: 0,
-                depthWrite: false,
-                duration: duration / 2,
-            });
-    });
-
-
-    tl.to([...neuron.equalsBoxes, ...neuron.productBoxes], {
+    // Hide product and equals boxes
+    tl.to(neuron.equalsBoxes, {
         depth: 0,
         startHeight: 0,
         startWidth: 0,
         endHeight: 0,
         endWidth: 0,
         duration: fast,
-        stagger: fast,
+    }).to(neuron.productBoxes, {
+        depth: 0,
+        startHeight: 0,
+        startWidth: 0,
+        endHeight: 0,
+        endWidth: 0,
+        duration: fast,
     })
 
+    // Show sum box and sum
     tl.from(neuron.sumBox, {
         depth: 0,
         startHeight: 0,
         startWidth: 0,
         endHeight: 0,
         endWidth: 0,
-        duration: moderate,
+        duration: slow,
     }).to(camera.position, {
             z: `+=${neuron.opShift}`,
-            duration: moderate,
+            duration: slow,
         }, '<')
         .from(neuron.sumCell, {
             opacity: 0,
-            duration: fast,
+            duration: moderate,
         });
 
+    // Move camera to sum
     tl.to(camera.position, {
-        x: tableSize / 2,
-        y: - tableSize / 2,
+        x: productGroupCenter.x,
+        y: productGroupCenter.y,
         z: neuron.sumCell.group.position.z + 1000,
         duration: fast,
         yoyo: true,
@@ -246,11 +265,19 @@ function getGhostSceneComps(input, weights) {
 function main() {
     const maxValue = 100;
     const palette = _.range(0, maxValue + 1).map(x => x/maxValue);
-    const ghostNumbersGray = idxToNumber(ghostIdxsGray, palette);
-    const pacmanNumbersGray = idxToNumber(pacmanIdxsGray, palette);
 
-    const inputNumbers = [pacmanNumbersGray];
-    const weightNumbers = [ghostNumbersGray];
+    const ghostNumbersRed = idxToNumber(ghostIdxsRed, palette);
+    const ghostNumbersGreen = idxToNumber(ghostIdxsGreen, palette);
+    const ghostNumbersBlue = idxToNumber(ghostIdxsBlue, palette);
+    const ghostNumbersRGB = [ghostNumbersRed, ghostNumbersGreen, ghostNumbersBlue];
+
+    const pacmanNumbersRed = idxToNumber(pacmanIdxsRed, palette);
+    const pacmanNumbersGreen = idxToNumber(pacmanIdxsGreen, palette);
+    const pacmanNumbersBlue = idxToNumber(pacmanIdxsBlue, palette);
+    const pacmanNumbersRGB = [pacmanNumbersRed, pacmanNumbersGreen, pacmanNumbersBlue];
+
+    const inputNumbers = pacmanNumbersRGB;
+    const weightNumbers = ghostNumbersRGB;
 
     const tl = getAnimationTimeline(getGhostSceneComps(inputNumbers, weightNumbers));
     tl.play();

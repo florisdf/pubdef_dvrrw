@@ -1,4 +1,4 @@
-import { idxToNumber, } from '../image_palette/image_palette.js';
+import { idxToNumber, } from '../01a-image_palette/image_palette.js';
 import ghostIdxsRed from './cyan_ghost_red.js';
 import ghostIdxsGreen from './cyan_ghost_green.js';
 import ghostIdxsBlue from './cyan_ghost_blue.js';
@@ -8,7 +8,7 @@ import outputIdxs from './output.js';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-import { OperandBox } from '../multiply_accum_rgb/operand_box.js';
+import { OperandBox } from '../03a-multiply_accum_rgb/operand_box.js';
 import { PixelTable } from './pixel_tables.js';
 
 
