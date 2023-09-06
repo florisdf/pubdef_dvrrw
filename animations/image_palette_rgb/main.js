@@ -100,6 +100,7 @@ function getAnimationTimeline(sceneCompsRed, sceneCompsGreen, sceneCompsBlue) {
                     color: 0x000000
                 });
                 numberTableGroup.children.forEach(mesh => {
+                    mesh.position.z -= 10;
                     mesh.material = blackMaterial;
                     mesh.renderOrder = 0;
                 });
@@ -145,8 +146,8 @@ function main() {
     const sceneCompsBlue = getNumberTableWithPalette(waldek_blue, paletteTable, floatToBlue)
 
     const {tl, canvas} = getAnimationTimeline(sceneCompsRed, sceneCompsGreen, sceneCompsBlue);
-    //capture({tl, canvas});
-    tl.play();
+    capture({tl, canvas});
+    // tl.play();
     // GSDevTools.create({animation: tl});
 }
 
