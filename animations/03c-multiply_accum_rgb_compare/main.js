@@ -129,6 +129,7 @@ function getAnimationTimeline() {
         defaults: {
             ease: "power2.inOut" 
         },
+        paused: true,
     });
 
     tl.add(() => {}, '+=1');
@@ -220,5 +221,6 @@ function getAnimationTimeline() {
 window.addEventListener('load', function () {
     const {tl, canvas} = getAnimationTimeline();
     // tl.play();
-    capture({tl, canvas});
+    const name = window.location.pathname.split('/').slice(-2)[0];
+    capture({tl, canvas, name});
 })

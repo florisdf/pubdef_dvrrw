@@ -116,6 +116,7 @@ function getAnimationTimeline() {
         defaults: {
             ease: "power2.inOut" 
         },
+        paused: true,
     });
 
     tl.add(() => {}, '+=1');

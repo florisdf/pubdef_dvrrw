@@ -270,5 +270,6 @@ function main() {
 window.addEventListener('load', function () {
     const {tl, canvas} = main();
     // tl.play();
-    capture({tl, canvas});
+    const name = window.location.pathname.split('/').slice(-2)[0];
+    capture({tl, canvas, name});
 })

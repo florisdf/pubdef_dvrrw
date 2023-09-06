@@ -76,6 +76,7 @@ function getAnimationTimeline({
         defaults: {
             ease: "power2.inOut" 
         },
+        paused: true,
     });
 
     const veryFast = 0.25;
@@ -261,7 +262,8 @@ function main() {
 
     const {tl, canvas} = getAnimationTimeline(getGhostSceneComps(inputNumbers, weightNumbers));
     // tl.play();
-    capture({tl, canvas});
+    const name = window.location.pathname.split('/').slice(-2)[0];
+    capture({tl, canvas, name});
 }
 
 window.addEventListener('load', function () {

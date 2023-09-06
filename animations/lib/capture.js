@@ -1,9 +1,10 @@
 export default async function capture({
     tl, canvas, framerate = 30,
     motionBlurFrames = 5,
+    name = null,
 }) {
     const capturer = new CCapture({
-        format: 'webm', framerate, motionBlurFrames
+        format: 'webm', framerate, motionBlurFrames, name,
     });
     capturer.start();
 

@@ -85,6 +85,7 @@ function getAnimationTimeline({
         defaults: {
             ease: "power2.inOut" 
         },
+        paused: true,
     });
 
     const veryFast = 0.25;
