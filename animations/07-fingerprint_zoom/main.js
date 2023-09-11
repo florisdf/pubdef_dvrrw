@@ -89,7 +89,7 @@ function getAnimationTimeline() {
     }).to(camera.position, {
         z: 500,
         duration: 3,
-    }, '<');
+    });
 
     return {tl, canvas};
 }
