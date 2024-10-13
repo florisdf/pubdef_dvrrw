@@ -67,7 +67,7 @@ function getAnimationTimeline(sceneCompsRed, sceneCompsGreen, sceneCompsBlue) {
     tl.add(() => {}, "+=1")
 
     let duration = 2;
-    let delay = 2;
+    let delay = 1;
     const allSceneComps = [sceneCompsRed, sceneCompsGreen, sceneCompsBlue];
     const meshCloneGroups = [];
     allSceneComps.forEach((sceneComps, i, arr) =>  {
@@ -115,8 +115,8 @@ function getAnimationTimeline(sceneCompsRed, sceneCompsGreen, sceneCompsBlue) {
         },
     })
 
-    duration = 3;
-    delay = 3;
+    duration = 1;
+    delay = 1;
     tl.to(
         [meshCloneGroups[0].position, allSceneComps[0].numberTableGroup.position], {
             y: `-=${sceneShiftY}`,

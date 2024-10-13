@@ -178,26 +178,13 @@ function main() {
         values: [monoIdxsToValues(outputIdxs)],
         cellSize,
         numPixelsShown: 0,
-        fillOpacity: 0.0,
-        fontOpacity: 1.0,
+        fillOpacity: 1.0,
+        fontOpacity: 0.0,
     });
     outputTable.group.position.z = neuronSize.z;
     outputTable.group.position.x = Math.floor(kernelSize * cellSize / 2) - cellSize / 2;
     outputTable.group.position.y = - Math.floor(kernelSize * cellSize / 2) + cellSize / 2;
     scene.add(outputTable.group);
-
-    const outputTableFilled = new PixelTable({
-        colors: [monoIdxsToRGB(outputIdxs)],
-        values: [monoIdxsToValues(outputIdxs)],
-        cellSize,
-        fillOpacity: 1.0,
-        fontOpacity: 0.0,
-    });
-    outputTableFilled.opacity = 0;
-    outputTableFilled.group.position.z = outputTable.group.position.z
-    outputTableFilled.group.position.x = outputTable.group.position.x
-    outputTableFilled.group.position.y = outputTable.group.position.y
-    scene.add(outputTableFilled.group);
 
     // const gridHelper = new THREE.GridHelper(1000, 10);
     // scene.add(gridHelper);
@@ -249,6 +236,7 @@ function main() {
 
     tl.add(() => {}, '+=3');
 
+    /**
     tl.to(imgTable, {
         opacity: 0,
         duration: 2,
@@ -280,6 +268,7 @@ function main() {
         opacity: 0,
         duration: 2,
     }, '<');
+    **/
 
     // tl.add(() => {}, '+=3');
 
@@ -346,16 +335,8 @@ function main() {
         duration: 3,
     });
 
-    tl.to(outputTable, {
-        opacity: 0,
-        duration: 2,
-    }).to(outputTableFilled, {
-        opacity: 1.0,
-        duration: 2,
-    }, '<');
-
     const inOutMargin = 500;
-    tl.to(outputTableFilled.group.position, {
+    tl.to(outputTable.group.position, {
         x: imgSize.x + inOutMargin,
         z: 0,
         duration: 2,

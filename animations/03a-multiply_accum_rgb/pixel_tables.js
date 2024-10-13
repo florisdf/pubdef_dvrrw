@@ -44,6 +44,23 @@ export class Table {
         }
         this.#size = new THREE.Box3().setFromObject(this.#group).getSize(new THREE.Vector3());
     }
+
+    get cellMarginX() {
+        return this.#cellMarginX;
+    }
+    get cellMarginY() {
+        return this.#cellMarginY;
+    }
+
+    set cellMarginX(cellMarginX) {
+        this.#cellMarginX = cellMarginX;
+        this.updateAll();
+    }
+    set cellMarginY(cellMarginY) {
+        this.#cellMarginY = cellMarginY;
+        this.updateAll();
+    }
+
     get group() {
         return this.#group;
     }
@@ -314,6 +331,10 @@ export class PixelTable {
             shiftX += table.size.x + this.#channelMargin;
         });
         this.#size = new THREE.Box3().setFromObject(this.group).getSize(new THREE.Vector3())
+    }
+
+    get tables() {
+        return this.#tables;
     }
 
     get cellSize() {
