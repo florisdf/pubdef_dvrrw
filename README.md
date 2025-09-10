@@ -1,1 +1,1 @@
-This repo contains code used for ThreeJS animations used in my PhD defense
+This repo contains code for ThreeJS animations used in my PhD defense
